@@ -1,4 +1,4 @@
-# Scripter for Obsidian
+# Scripter
 
 **Turn Obsidian into a fast, distraction-free screenplay writer.**  
 **讓 Obsidian 變身為輕量、免費且專業的美式劇本寫作軟體。**

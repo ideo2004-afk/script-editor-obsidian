@@ -1,7 +1,7 @@
 {
-    "id": "scripter-for-obsidian",
-    "name": "Scripter for Obsidian",
-    "version": "1.0.0",
+    "id": "scripter",
+    "name": "Scripter",
+    "version": "1.0.1",
     "minAppVersion": "1.0.0",
     "description": "Applies standard screenplay formatting (Scene, Character, Dialogue, etc.) via the context menu.",
     "author": "ideo2004",
