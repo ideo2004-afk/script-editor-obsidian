@@ -87,10 +87,21 @@ The plugin includes a dedicated print engine (`@media print`) that fixes common 
 
 ## 📦 Installation
 
-This is currently a private plugin. To install:
-1. Copy the `scripter-for-obsidian` folder to your vault's `.obsidian/plugins/` directory.
-2. Enable it in **Settings > Community Plugins**.
-3. Reload Obsidian.
+To install this plugin, we recommend using **BRAT** for easy updates.
+
+### Using BRAT (Recommended)
+1. Install **BRAT** from the Community Plugins in Obsidian.
+2. Open BRAT settings.
+3. Click "Add Beta plugin".
+4. Enter the repository URL: `https://github.com/ideo2004-afk/Scripter-For-Obsidian`.
+5. Click "Add Plugin".
+6. The plugin will be installed and enabled.
+
+### Manual Installation
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [Latest Release](https://github.com/ideo2004-afk/Scripter-For-Obsidian/releases/latest).
+2. Create a folder named `scripter-for-obsidian` in your vault's `.obsidian/plugins/` directory.
+3. Copy the downloaded files into that folder.
+4. Reload Obsidian.
 
 ## 🎨 CSS Customization
 The plugin uses `styles.css` for all formatting. You can tweak:
