@@ -34,8 +34,8 @@ var SCRIPT_MARKERS = {
   CHARACTER: "@",
   PARENTHETICAL: "("
 };
-var SCENE_REGEX = /^(\d+[\.\s]\s*)?((?:INT|EXT|INT\/EXT|I\/E)[\.\s])/i;
-var TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:\.]?))$/;
+var SCENE_REGEX = /^(\d+[.\s]\s*)?((?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
+var TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
 var PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
 var OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
 var CSS_CLASSES = {
@@ -55,16 +55,15 @@ var LP_CLASSES = {
   SYMBOL: "lp-marker-symbol"
 };
 var ScripterPlugin = class extends import_obsidian.Plugin {
-  async onload() {
-    console.log("Loading Scripter plugin");
+  onload() {
     this.addSettingTab(new ScripterSettingTab(this.app, this));
     this.addCommand({
-      id: "scripter-renumber-scenes",
-      name: "Renumber Scenes",
+      id: "renumber-scenes",
+      name: "Renumber scenes",
       editorCallback: (editor) => this.renumberScenes(editor)
     });
     this.registerMarkdownPostProcessor((element, context) => {
-      var _a, _b, _c;
+      var _a;
       const frontmatter = context.frontmatter;
       const cssClasses = (frontmatter == null ? void 0 : frontmatter.cssclasses) || [];
       if (!Array.isArray(cssClasses) || !cssClasses.includes("fountain") && !cssClasses.includes("script")) {
@@ -74,27 +73,28 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
       let previousType = null;
       for (let i = 0; i < lines.length; i++) {
         let p = lines[i];
-        let rawContent = p.innerHTML;
-        const splitRegex = /<br\s*\/?>|\n/i;
-        const match = rawContent.match(splitRegex);
-        if (match) {
-          const splitIndex = match.index;
-          const splitLen = match[0].length;
-          const tempDiv = document.createElement("div");
-          const firstPartHtml = rawContent.substring(0, splitIndex);
-          tempDiv.innerHTML = firstPartHtml;
-          const firstPartText = ((_a = tempDiv.textContent) == null ? void 0 : _a.trim()) || "";
-          const firstFormat = this.detectExplicitFormat(firstPartText);
+        let splitIndex = -1;
+        const childNodes = Array.from(p.childNodes);
+        for (let j = 0; j < childNodes.length; j++) {
+          if (childNodes[j].nodeName === "BR") {
+            splitIndex = j;
+            break;
+          }
+        }
+        if (splitIndex !== -1) {
+          const nodesBefore = childNodes.slice(0, splitIndex);
+          const textBefore = nodesBefore.map((n) => n.textContent).join("").trim();
+          const firstFormat = this.detectExplicitFormat(textBefore);
           if ((firstFormat == null ? void 0 : firstFormat.typeKey) === "CHARACTER") {
-            p.textContent = firstPartText;
+            p.empty();
+            p.textContent = textBefore;
             this.applyFormatToElement(p, firstFormat);
             previousType = "CHARACTER";
-            const remainingHtml = rawContent.substring(splitIndex + splitLen);
-            tempDiv.innerHTML = remainingHtml;
-            const remainingText = ((_b = tempDiv.textContent) == null ? void 0 : _b.trim()) || "";
-            if (remainingText) {
-              const newP = document.createElement("p");
-              newP.textContent = remainingText;
+            const nodesAfter = childNodes.slice(splitIndex + 1);
+            const textAfter = nodesAfter.map((n) => n.textContent).join("").trim();
+            if (textAfter) {
+              const newP = createEl("p");
+              newP.textContent = textAfter;
               newP.addClass(CSS_CLASSES.DIALOGUE);
               p.insertAdjacentElement("afterend", newP);
               previousType = "DIALOGUE";
@@ -102,7 +102,7 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
             continue;
           }
         }
-        let text = ((_c = p.textContent) == null ? void 0 : _c.trim()) || "";
+        let text = ((_a = p.textContent) == null ? void 0 : _a.trim()) || "";
         if (!text) {
           previousType = null;
           continue;
@@ -129,7 +129,7 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
           item.setTitle("Scripter").setIcon("film");
           const subMenu = item.setSubmenu();
           subMenu.addItem((startItem) => {
-            startItem.setTitle("Scene Heading").setIcon("clapperboard");
+            startItem.setTitle("Scene heading").setIcon("clapperboard");
             const sceneMenu = startItem.setSubmenu();
             sceneMenu.addItem((i) => i.setTitle("EXT.").onClick(() => this.insertText(editor, "EXT. ", false)));
             sceneMenu.addItem((i) => i.setTitle("INT.").onClick(() => this.insertText(editor, "INT. ", false)));
@@ -147,17 +147,16 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
           });
           subMenu.addSeparator();
           subMenu.addItem((subItem) => {
-            subItem.setTitle("Renumber Scenes").setIcon("list-ordered").onClick(() => this.renumberScenes(editor));
+            subItem.setTitle("Renumber scenes").setIcon("list-ordered").onClick(() => this.renumberScenes(editor));
           });
           subMenu.addItem((subItem) => {
-            subItem.setTitle("Clear Format").setIcon("eraser").onClick(() => this.clearLinePrefix(editor));
+            subItem.setTitle("Clear format").setIcon("eraser").onClick(() => this.clearLinePrefix(editor));
           });
         });
       })
     );
   }
   onunload() {
-    console.log("Unloading Scripter");
   }
   // ------------------------------------------------------------------
   // Live Preview Extension (CodeMirror 6)
@@ -242,9 +241,11 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
   // Core Logic
   // ------------------------------------------------------------------
   addMenuItem(menu, title, icon, editor, marker) {
-    menu.addItem((item) => {
-      item.setTitle(title).setIcon(icon).onClick(() => this.toggleLinePrefix(editor, marker));
-    });
+    if (menu instanceof import_obsidian.Menu) {
+      menu.addItem((item) => {
+        item.setTitle(title).setIcon(icon).onClick(() => this.toggleLinePrefix(editor, marker));
+      });
+    }
   }
   detectExplicitFormat(text) {
     if (SCENE_REGEX.test(text)) {
@@ -292,7 +293,7 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
         const sceneNumStr = sceneCounter.toString().padStart(2, "0") + ". ";
         let contentWithoutNumber = trimmed;
         if (match[1]) {
-          contentWithoutNumber = trimmed.replace(/^\d+[\.\s]\s*/, "");
+          contentWithoutNumber = trimmed.replace(/^\d+[.\s]\s*/, "");
         }
         contentWithoutNumber = contentWithoutNumber.trim();
         const newLine = sceneNumStr + contentWithoutNumber;
@@ -359,14 +360,14 @@ var ScripterSettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Scripter for Obsidian - Usage Guide" });
-    new import_obsidian.Setting(containerEl).setName("Getting Started").setDesc("How to activate screenplay formatting for a specific note.").setHeading();
+    new import_obsidian.Setting(containerEl).setName("Usage guide").setHeading();
+    new import_obsidian.Setting(containerEl).setName("Getting started").setDesc("How to activate screenplay formatting for a specific note.").setHeading();
     const setupInfo = containerEl.createEl("div", { cls: "setting-item-description" });
     setupInfo.createEl("p", { text: "To enable Scripter features (Live Preview & Print Formatting), adds the following to your note's frontmatter (Properties):" });
     setupInfo.createEl("pre", { text: "---\ncssclasses: fountain\n---" });
     setupInfo.createEl("p", { text: 'Or use "script" instead of "fountain".' });
     containerEl.createEl("br");
-    new import_obsidian.Setting(containerEl).setName("Syntax Reference").setDesc("Basic rules for formatting your screenplay.").setHeading();
+    new import_obsidian.Setting(containerEl).setName("Syntax reference").setDesc("Basic rules for formatting your screenplay.").setHeading();
     const syntaxDiv = containerEl.createEl("div");
     const createRow = (title, syntax, desc) => {
       const p = syntaxDiv.createEl("p");

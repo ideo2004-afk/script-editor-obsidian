@@ -1,6 +1,6 @@
-import { Plugin, MarkdownView, Editor, Menu, App, PluginSettingTab, Setting } from 'obsidian';
-import { Extension, RangeSetBuilder, StateField, Transaction } from '@codemirror/state';
-import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate, WidgetType } from '@codemirror/view';
+import { Plugin, MarkdownView, Editor, Menu, App, PluginSettingTab, Setting, MenuItem } from 'obsidian';
+import { RangeSetBuilder } from '@codemirror/state';
+import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
 
 // Script Symbols
 const SCRIPT_MARKERS = {
@@ -9,8 +9,8 @@ const SCRIPT_MARKERS = {
 };
 
 // Regex Definitions
-const SCENE_REGEX = /^(\d+[\.\s]\s*)?((?:INT|EXT|INT\/EXT|I\/E)[\.\s])/i;
-const TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:\.]?))$/;
+const SCENE_REGEX = /^(\d+[.\s]\s*)?((?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
+const TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
 const PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
 const OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
 
@@ -34,17 +34,26 @@ const LP_CLASSES = {
     SYMBOL: 'lp-marker-symbol'
 }
 
-export default class ScripterPlugin extends Plugin {
-    async onload() {
-        console.log('Loading Scripter plugin');
+interface ScriptFormat {
+    cssClass: string;
+    removePrefix: boolean;
+    markerLength: number;
+    typeKey: string;
+}
 
+interface ExtendedMenuItem extends MenuItem {
+    setSubmenu(): Menu;
+}
+
+export default class ScripterPlugin extends Plugin {
+    onload() {
         // 1. Settings / Help Tab
         this.addSettingTab(new ScripterSettingTab(this.app, this));
 
         // 2. Command: Renumber Scenes
         this.addCommand({
-            id: 'scripter-renumber-scenes',
-            name: 'Renumber Scenes',
+            id: 'renumber-scenes',
+            name: 'Renumber scenes',
             editorCallback: (editor: Editor) => this.renumberScenes(editor)
         });
 
@@ -64,38 +73,40 @@ export default class ScripterPlugin extends Plugin {
 
             for (let i = 0; i < lines.length; i++) {
                 let p = lines[i] as HTMLElement;
-                // 使用 innerHTML 來偵測換行，解決 PDF 輸出時 DOM 結構合併問題
-                let rawContent = p.innerHTML;
 
-                // 1. 偵測 "Character + Dialogue" 的合併段落
-                const splitRegex = /<br\s*\/?>|\n/i;
-                const match = rawContent.match(splitRegex);
+                // Optimized Splitting Logic (No innerHTML)
+                let splitIndex = -1;
+                const childNodes = Array.from(p.childNodes);
 
-                if (match) {
-                    const splitIndex = match.index!;
-                    const splitLen = match[0].length;
+                for (let j = 0; j < childNodes.length; j++) {
+                    if (childNodes[j].nodeName === 'BR') {
+                        splitIndex = j;
+                        break;
+                    }
+                }
 
-                    // 取得第一行
-                    const tempDiv = document.createElement('div');
-                    const firstPartHtml = rawContent.substring(0, splitIndex);
-                    tempDiv.innerHTML = firstPartHtml;
-                    const firstPartText = tempDiv.textContent?.trim() || '';
-                    const firstFormat = this.detectExplicitFormat(firstPartText);
+                if (splitIndex !== -1) {
+                    // Split found!
+                    // 1. Text before split (Character Candidate)
+                    const nodesBefore = childNodes.slice(0, splitIndex);
+                    const textBefore = nodesBefore.map(n => n.textContent).join('').trim();
+                    const firstFormat = this.detectExplicitFormat(textBefore);
 
                     if (firstFormat?.typeKey === 'CHARACTER') {
-                        // Action 1: 轉回純角色名
-                        p.textContent = firstPartText;
+                        // Action 1: Transform p to Character
+                        p.empty();
+                        p.textContent = textBefore;
                         this.applyFormatToElement(p, firstFormat);
                         previousType = 'CHARACTER';
 
-                        // Action 2: 創建新 P
-                        const remainingHtml = rawContent.substring(splitIndex + splitLen);
-                        tempDiv.innerHTML = remainingHtml;
-                        const remainingText = tempDiv.textContent?.trim() || '';
+                        // Action 2: New P for Dialogue
+                        // Get content after split
+                        const nodesAfter = childNodes.slice(splitIndex + 1);
+                        const textAfter = nodesAfter.map(n => n.textContent).join('').trim();
 
-                        if (remainingText) {
-                            const newP = document.createElement('p');
-                            newP.textContent = remainingText;
+                        if (textAfter) {
+                            const newP = createEl('p');
+                            newP.textContent = textAfter;
                             newP.addClass(CSS_CLASSES.DIALOGUE);
                             p.insertAdjacentElement('afterend', newP);
                             previousType = 'DIALOGUE';
@@ -104,7 +115,7 @@ export default class ScripterPlugin extends Plugin {
                     }
                 }
 
-                // 2. 正常單行處理
+                // 2. Normal Single Line Processing
                 let text = p.textContent?.trim() || '';
                 if (!text) {
                     previousType = null;
@@ -135,41 +146,41 @@ export default class ScripterPlugin extends Plugin {
         // 5. Context Menu
         this.registerEvent(
             this.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
-                menu.addItem((item: any) => {
+                menu.addItem((item: MenuItem) => {
                     item.setTitle("Scripter").setIcon("film");
-                    const subMenu = item.setSubmenu();
+                    const subMenu = (item as ExtendedMenuItem).setSubmenu();
 
                     // Scene Heading Submenu
-                    subMenu.addItem((startItem: any) => {
-                        startItem.setTitle("Scene Heading").setIcon("clapperboard");
-                        const sceneMenu = startItem.setSubmenu();
-                        sceneMenu.addItem((i: any) => i.setTitle("EXT.").onClick(() => this.insertText(editor, "EXT. ", false)));
-                        sceneMenu.addItem((i: any) => i.setTitle("INT.").onClick(() => this.insertText(editor, "INT. ", false)));
-                        sceneMenu.addItem((i: any) => i.setTitle("I/E.").onClick(() => this.insertText(editor, "INT./EXT. ", false)));
+                    subMenu.addItem((startItem: MenuItem) => {
+                        startItem.setTitle("Scene heading").setIcon("clapperboard");
+                        const sceneMenu = (startItem as ExtendedMenuItem).setSubmenu();
+                        sceneMenu.addItem((i: MenuItem) => i.setTitle("EXT.").onClick(() => this.insertText(editor, "EXT. ", false)));
+                        sceneMenu.addItem((i: MenuItem) => i.setTitle("INT.").onClick(() => this.insertText(editor, "INT. ", false)));
+                        sceneMenu.addItem((i: MenuItem) => i.setTitle("I/E.").onClick(() => this.insertText(editor, "INT./EXT. ", false)));
                     });
 
                     this.addMenuItem(subMenu, "Character (@)", "user", editor, SCRIPT_MARKERS.CHARACTER);
                     this.addMenuItem(subMenu, "Parenthetical ( ( )", "italic", editor, SCRIPT_MARKERS.PARENTHETICAL);
 
                     // Transition Submenu
-                    subMenu.addItem((item: any) => {
+                    subMenu.addItem((item: MenuItem) => {
                         item.setTitle("Transition").setIcon("arrow-right");
-                        const m = item.setSubmenu();
-                        m.addItem((i: any) => i.setTitle("CUT TO:").onClick(() => this.insertText(editor, "CUT TO:", true)));
-                        m.addItem((i: any) => i.setTitle("FADE OUT.").onClick(() => this.insertText(editor, "FADE OUT.", true)));
-                        m.addItem((i: any) => i.setTitle("FADE IN:").onClick(() => this.insertText(editor, "FADE IN:", true)));
-                        m.addItem((i: any) => i.setTitle("DISSOLVE TO:").onClick(() => this.insertText(editor, "DISSOLVE TO:", true)));
+                        const m = (item as ExtendedMenuItem).setSubmenu();
+                        m.addItem((i: MenuItem) => i.setTitle("CUT TO:").onClick(() => this.insertText(editor, "CUT TO:", true)));
+                        m.addItem((i: MenuItem) => i.setTitle("FADE OUT.").onClick(() => this.insertText(editor, "FADE OUT.", true)));
+                        m.addItem((i: MenuItem) => i.setTitle("FADE IN:").onClick(() => this.insertText(editor, "FADE IN:", true)));
+                        m.addItem((i: MenuItem) => i.setTitle("DISSOLVE TO:").onClick(() => this.insertText(editor, "DISSOLVE TO:", true)));
                     });
 
                     subMenu.addSeparator();
 
-                    subMenu.addItem((subItem: any) => {
-                        subItem.setTitle("Renumber Scenes").setIcon("list-ordered")
+                    subMenu.addItem((subItem: MenuItem) => {
+                        subItem.setTitle("Renumber scenes").setIcon("list-ordered")
                             .onClick(() => this.renumberScenes(editor));
                     });
 
-                    subMenu.addItem((subItem: any) => {
-                        subItem.setTitle("Clear Format").setIcon("eraser")
+                    subMenu.addItem((subItem: MenuItem) => {
+                        subItem.setTitle("Clear format").setIcon("eraser")
                             .onClick(() => this.clearLinePrefix(editor));
                     });
                 });
@@ -178,7 +189,7 @@ export default class ScripterPlugin extends Plugin {
     }
 
     onunload() {
-        console.log('Unloading Scripter');
+        // cleanup
     }
 
     // ------------------------------------------------------------------
@@ -282,13 +293,15 @@ export default class ScripterPlugin extends Plugin {
     // Core Logic
     // ------------------------------------------------------------------
 
-    addMenuItem(menu: any, title: string, icon: string, editor: Editor, marker: string) {
-        menu.addItem((item: any) => {
-            item.setTitle(title).setIcon(icon).onClick(() => this.toggleLinePrefix(editor, marker));
-        });
+    addMenuItem(menu: Menu | MenuItem, title: string, icon: string, editor: Editor, marker: string) {
+        if (menu instanceof Menu) {
+            menu.addItem((item: MenuItem) => {
+                item.setTitle(title).setIcon(icon).onClick(() => this.toggleLinePrefix(editor, marker));
+            });
+        }
     }
 
-    detectExplicitFormat(text: string) {
+    detectExplicitFormat(text: string): ScriptFormat | null {
         if (SCENE_REGEX.test(text)) {
             return { cssClass: CSS_CLASSES.SCENE, removePrefix: false, markerLength: 0, typeKey: 'SCENE' };
         }
@@ -307,7 +320,7 @@ export default class ScripterPlugin extends Plugin {
         return null;
     }
 
-    applyFormatToElement(p: HTMLElement, format: any) {
+    applyFormatToElement(p: HTMLElement, format: ScriptFormat) {
         p.addClass(format.cssClass);
         if (format.removePrefix && format.markerLength > 0) {
             this.stripMarkerFromElement(p, format.markerLength);
@@ -339,7 +352,7 @@ export default class ScripterPlugin extends Plugin {
                 const sceneNumStr = sceneCounter.toString().padStart(2, '0') + ". ";
                 let contentWithoutNumber = trimmed;
                 if (match[1]) {
-                    contentWithoutNumber = trimmed.replace(/^\d+[\.\s]\s*/, '');
+                    contentWithoutNumber = trimmed.replace(/^\d+[.\s]\s*/, '');
                 }
                 contentWithoutNumber = contentWithoutNumber.trim();
                 const newLine = sceneNumStr + contentWithoutNumber;
@@ -415,11 +428,13 @@ class ScripterSettingTab extends PluginSettingTab {
 
         containerEl.empty();
 
-        containerEl.createEl('h2', { text: 'Scripter for Obsidian - Usage Guide' });
+        new Setting(containerEl)
+            .setName('Usage guide')
+            .setHeading();
 
         // 1. Setup Instructions
         new Setting(containerEl)
-            .setName('Getting Started')
+            .setName('Getting started')
             .setDesc('How to activate screenplay formatting for a specific note.')
             .setHeading();
 
@@ -432,7 +447,7 @@ class ScripterSettingTab extends PluginSettingTab {
 
         // 2. Syntax Guide
         new Setting(containerEl)
-            .setName('Syntax Reference')
+            .setName('Syntax reference')
             .setDesc('Basic rules for formatting your screenplay.')
             .setHeading();
 

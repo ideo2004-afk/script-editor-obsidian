@@ -14,7 +14,7 @@
     font-weight: bold !important;
     text-transform: uppercase;
     text-align: left !important;
-    margin-top: 2.5em !important;
+    margin-top: 2em !important;
     margin-bottom: 1em !important;
     /* display: list-item !important;  <-- REMOVED: 避免在非列表的 p 元素上出現黑點 */
 
@@ -27,9 +27,9 @@
 
 /* 針對 Obsidian 列表的特定修正 */
 li.script-scene {
-    margin-top: 3em !important;
+    margin-top: 2em !important;
     /* 列表項目的 margin 有時候會被吃掉，強制加強 */
-    display: list-item !important;
+    /* display: list-item !important; */
     /* li 本身就是 list-item，這裡強調一下無妨，或是也不需要 */
 }
 
@@ -45,19 +45,19 @@ li.script-scene::marker {
     padding-left: 0 !important;
     margin-left: 20% !important;
     margin-right: 20% !important;
-    margin-top: 1.5em !important;
+    /* margin-top: 1.0em !important; */
     margin-bottom: 0px !important;
     padding-bottom: 0px !important;
     display: block !important;
-    font-weight: bold !important;
+    /* font-weight: bold !important; */
 }
 
 /* Dialogue: : or ： */
 /* 螢幕閱讀模式：使用較寬的縮排 (20%) 以保持劇本感 */
 .script-dialogue {
     text-align: justify !important;
-    margin-left: 20% !important;
-    margin-right: 20% !important;
+    margin-left: 18% !important;
+    margin-right: 18% !important;
     margin-top: 0px !important;
     margin-bottom: 1em !important;
     display: block !important;
@@ -66,9 +66,9 @@ li.script-scene::marker {
 
 /* Parenthetical: ( */
 .script-parenthetical {
-    text-align: center !important;
-    margin-left: 30% !important;
-    margin-right: 30% !important;
+    /* text-align: center !important; */
+    margin-left: 18% !important;
+    margin-right: 18% !important;
     margin-bottom: 0px !important;
     font-style: italic !important;
     display: block !important;
@@ -90,22 +90,19 @@ li.script-scene::marker {
 @media print {
 
     .script-character {
-        /* margin-left: 10% !important;*/
-        /* margin-right: 10% !important;*/
-        /* width: auto !important;*/
         text-align: center !important;
     }
 
     .script-dialogue {
-        margin-left: 11% !important;
-        margin-right: 11% !important;
+        margin-left: 10% !important;
+        margin-right: 10% !important;
         /* 強制防呆：確保對白不會變成粗體 */
         font-weight: normal !important;
     }
 
     .script-parenthetical {
-        margin-left: 11% !important;
-        margin-right: 11% !important;
+        margin-left: 10% !important;
+        margin-right: 10% !important;
     }
 }
 
@@ -129,7 +126,7 @@ li.script-scene::marker {
 }
 
 .lp-character {
-    font-weight: bold !important;
+    /* font-weight: bold !important; */
     text-transform: uppercase;
     text-align: center !important;
     color: var(--text-normal) !important;
@@ -149,7 +146,7 @@ li.script-scene::marker {
     color: var(--text-muted) !important;
     padding-left: 10% !important;
     padding-right: 10% !important;
-    text-align: center !important;
+    /* text-align: center !important; */
 }
 
 .lp-transition {
