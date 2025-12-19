@@ -28,9 +28,6 @@
 /* 針對 Obsidian 列表的特定修正 */
 li.script-scene {
     margin-top: 2em !important;
-    /* 列表項目的 margin 有時候會被吃掉，強制加強 */
-    /* display: list-item !important; */
-    /* li 本身就是 list-item，這裡強調一下無妨，或是也不需要 */
 }
 
 li.script-scene::marker {
@@ -43,9 +40,9 @@ li.script-scene::marker {
     text-transform: uppercase;
     text-align: center !important;
     padding-left: 0 !important;
-    margin-left: 20% !important;
-    margin-right: 20% !important;
-    /* margin-top: 1.0em !important; */
+    margin-left: 22% !important;
+    margin-right: 22% !important;
+    margin-top: 1em !important;
     margin-bottom: 0px !important;
     padding-bottom: 0px !important;
     display: block !important;
@@ -53,7 +50,6 @@ li.script-scene::marker {
 }
 
 /* Dialogue: : or ： */
-/* 螢幕閱讀模式：使用較寬的縮排 (20%) 以保持劇本感 */
 .script-dialogue {
     text-align: justify !important;
     margin-left: 18% !important;
@@ -66,7 +62,6 @@ li.script-scene::marker {
 
 /* Parenthetical: ( */
 .script-parenthetical {
-    /* text-align: center !important; */
     margin-left: 18% !important;
     margin-right: 18% !important;
     margin-bottom: 0px !important;
@@ -87,7 +82,6 @@ li.script-scene::marker {
 }
 
 /* PDF Export / Print Settings */
-/* PDF Export / Print Settings */
 @media print {
 
     /* Ensure Scene Headings are bold and clean */
@@ -99,37 +93,30 @@ li.script-scene::marker {
     /* Character: Keep centered but strict spacing */
     .script-character {
         text-align: center !important;
-        /* Enforce margins to ensure centering is visible and distinct from dialogue */
         margin-left: 20% !important;
         margin-right: 20% !important;
         margin-bottom: 0px !important;
-        /* Critical for connection to dialogue */
         padding-bottom: 0px !important;
         page-break-after: avoid;
-        /* Keep character with dialogue */
     }
 
-    /* Dialogue: Narrower column (~3.5-4 inches equivalent) */
+    /* Dialogue: Narrower column */
     .script-dialogue {
         text-align: left !important;
-        /* Standard screenplay formal is left-aligned in a centered column */
         margin-left: 10% !important;
-        /* Narrower than 10% for authentic look */
         margin-right: 10% !important;
         margin-top: 0px !important;
         margin-bottom: 1em !important;
         font-weight: normal !important;
         white-space: pre-wrap !important;
-        /* Preserve wrapping */
     }
 
     .script-parenthetical {
         margin-left: 10% !important;
-        /* Narrower than dialogue */
         margin-right: 10% !important;
         margin-top: 0px !important;
         margin-bottom: 0px !important;
-        /* text-align: left !important; */
+        text-align: left !important;
         page-break-before: avoid;
     }
 
