@@ -87,22 +87,55 @@ li.script-scene::marker {
 }
 
 /* PDF Export / Print Settings */
+/* PDF Export / Print Settings */
 @media print {
 
-    .script-character {
-        text-align: center !important;
+    /* Ensure Scene Headings are bold and clean */
+    .script-scene {
+        margin-top: 1.5em !important;
+        margin-bottom: 0.5em !important;
     }
 
+    /* Character: Keep centered but strict spacing */
+    .script-character {
+        text-align: center !important;
+        margin-left: 20% !important;
+        /* Match reading view or slightly wider */
+        margin-right: 20% !important;
+        margin-bottom: 0px !important;
+        /* Critical for connection to dialogue */
+        padding-bottom: 0px !important;
+        page-break-after: avoid;
+        /* Keep character with dialogue */
+    }
+
+    /* Dialogue: Narrower column (~3.5-4 inches equivalent) */
     .script-dialogue {
-        margin-left: 10% !important;
-        margin-right: 10% !important;
-        /* 強制防呆：確保對白不會變成粗體 */
+        text-align: left !important;
+        /* Standard screenplay formal is left-aligned in a centered column */
+        margin-left: 25% !important;
+        /* Narrower than 10% for authentic look */
+        margin-right: 25% !important;
+        margin-top: 0px !important;
+        margin-bottom: 1em !important;
         font-weight: normal !important;
+        white-space: pre-wrap !important;
+        /* Preserve wrapping */
     }
 
     .script-parenthetical {
-        margin-left: 10% !important;
-        margin-right: 10% !important;
+        margin-left: 30% !important;
+        /* Narrower than dialogue */
+        margin-right: 30% !important;
+        margin-top: 0px !important;
+        margin-bottom: 0px !important;
+        /* text-align: left !important; */
+        page-break-before: avoid;
+    }
+
+    .script-transition {
+        text-align: right !important;
+        margin-right: 1.5em !important;
     }
 }
 
