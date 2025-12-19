@@ -75,39 +75,77 @@ export default class ScripterPlugin extends Plugin {
                 let p = lines[i] as HTMLElement;
 
                 // Optimized Splitting Logic (No innerHTML)
+                // We check for BR elements OR newline characters in literal text nodes.
                 let splitIndex = -1;
+                let splitTextNode: Node | null = null;
+                let splitOffset = -1;
+
                 const childNodes = Array.from(p.childNodes);
 
                 for (let j = 0; j < childNodes.length; j++) {
-                    if (childNodes[j].nodeName === 'BR') {
+                    const node = childNodes[j];
+                    if (node.nodeName === 'BR') {
                         splitIndex = j;
                         break;
+                    }
+                    if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+                        // Check for newline chars which strictly imply line break in source
+                        const nl = node.textContent.indexOf('\n');
+                        if (nl !== -1) {
+                            splitIndex = j;
+                            splitTextNode = node;
+                            splitOffset = nl;
+                            break;
+                        }
                     }
                 }
 
                 if (splitIndex !== -1) {
                     // Split found!
-                    // 1. Text before split (Character Candidate)
-                    const nodesBefore = childNodes.slice(0, splitIndex);
-                    const textBefore = nodesBefore.map(n => n.textContent).join('').trim();
+                    // Determine text before split to check if it is a Character
+                    let textBefore = "";
+                    for (let k = 0; k < splitIndex; k++) textBefore += childNodes[k].textContent || "";
+                    if (splitTextNode) {
+                        textBefore += splitTextNode.textContent!.substring(0, splitOffset);
+                    }
+                    textBefore = textBefore.trim();
+
                     const firstFormat = this.detectExplicitFormat(textBefore);
 
                     if (firstFormat?.typeKey === 'CHARACTER') {
-                        // Action 1: Transform p to Character
-                        p.empty();
+                        // Action 1: Create Dialogue P
+                        const newP = createEl('p');
+                        newP.addClass(CSS_CLASSES.DIALOGUE);
+
+                        // Move all nodes AFTER splitIndex to newP
+                        for (let k = splitIndex + 1; k < childNodes.length; k++) {
+                            newP.appendChild(childNodes[k]);
+                        }
+
+                        // Handle the split node
+                        if (splitTextNode) {
+                            const fullText = splitTextNode.textContent || '';
+                            const textAfter = fullText.substring(splitOffset + 1);
+                            // Set character text
+                            splitTextNode.textContent = fullText.substring(0, splitOffset);
+
+                            if (textAfter.trim()) {
+                                newP.prepend(document.createTextNode(textAfter));
+                            }
+                        } else {
+                            // It was a BR. Remove it from p (so it doesn't trail the character name)
+                            // We don't need it in newP either.
+                            p.removeChild(childNodes[splitIndex]);
+                        }
+
+                        // Action 2: Transform Current P to Character
+                        // We reset textContent to remove any residual empty nodes or BRs
                         p.textContent = textBefore;
                         this.applyFormatToElement(p, firstFormat);
                         previousType = 'CHARACTER';
 
-                        // Action 2: New P for Dialogue
-                        // Get content after split
-                        const nodesAfter = childNodes.slice(splitIndex + 1);
-                        const textAfter = nodesAfter.map(n => n.textContent).join('').trim();
-
-                        if (textAfter) {
-                            const newP = createEl('p');
-                            newP.textContent = textAfter;
-                            newP.addClass(CSS_CLASSES.DIALOGUE);
+                        // Insert newP
+                        if (newP.textContent?.trim()) {
                             p.insertAdjacentElement('afterend', newP);
                             previousType = 'DIALOGUE';
                         }
@@ -115,7 +153,7 @@ export default class ScripterPlugin extends Plugin {
                     }
                 }
 
-                // 2. Normal Single Line Processing
+                // Normal Single Line Processing
                 let text = p.textContent?.trim() || '';
                 if (!text) {
                     previousType = null;

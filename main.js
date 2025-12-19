@@ -63,7 +63,7 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
       editorCallback: (editor) => this.renumberScenes(editor)
     });
     this.registerMarkdownPostProcessor((element, context) => {
-      var _a;
+      var _a, _b;
       const frontmatter = context.frontmatter;
       const cssClasses = (frontmatter == null ? void 0 : frontmatter.cssclasses) || [];
       if (!Array.isArray(cssClasses) || !cssClasses.includes("fountain") && !cssClasses.includes("script")) {
@@ -74,35 +74,61 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
       for (let i = 0; i < lines.length; i++) {
         let p = lines[i];
         let splitIndex = -1;
+        let splitTextNode = null;
+        let splitOffset = -1;
         const childNodes = Array.from(p.childNodes);
         for (let j = 0; j < childNodes.length; j++) {
-          if (childNodes[j].nodeName === "BR") {
+          const node = childNodes[j];
+          if (node.nodeName === "BR") {
             splitIndex = j;
             break;
           }
+          if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+            const nl = node.textContent.indexOf("\n");
+            if (nl !== -1) {
+              splitIndex = j;
+              splitTextNode = node;
+              splitOffset = nl;
+              break;
+            }
+          }
         }
         if (splitIndex !== -1) {
-          const nodesBefore = childNodes.slice(0, splitIndex);
-          const textBefore = nodesBefore.map((n) => n.textContent).join("").trim();
+          let textBefore = "";
+          for (let k = 0; k < splitIndex; k++)
+            textBefore += childNodes[k].textContent || "";
+          if (splitTextNode) {
+            textBefore += splitTextNode.textContent.substring(0, splitOffset);
+          }
+          textBefore = textBefore.trim();
           const firstFormat = this.detectExplicitFormat(textBefore);
           if ((firstFormat == null ? void 0 : firstFormat.typeKey) === "CHARACTER") {
-            p.empty();
+            const newP = createEl("p");
+            newP.addClass(CSS_CLASSES.DIALOGUE);
+            for (let k = splitIndex + 1; k < childNodes.length; k++) {
+              newP.appendChild(childNodes[k]);
+            }
+            if (splitTextNode) {
+              const fullText = splitTextNode.textContent || "";
+              const textAfter = fullText.substring(splitOffset + 1);
+              splitTextNode.textContent = fullText.substring(0, splitOffset);
+              if (textAfter.trim()) {
+                newP.prepend(document.createTextNode(textAfter));
+              }
+            } else {
+              p.removeChild(childNodes[splitIndex]);
+            }
             p.textContent = textBefore;
             this.applyFormatToElement(p, firstFormat);
             previousType = "CHARACTER";
-            const nodesAfter = childNodes.slice(splitIndex + 1);
-            const textAfter = nodesAfter.map((n) => n.textContent).join("").trim();
-            if (textAfter) {
-              const newP = createEl("p");
-              newP.textContent = textAfter;
-              newP.addClass(CSS_CLASSES.DIALOGUE);
+            if ((_a = newP.textContent) == null ? void 0 : _a.trim()) {
               p.insertAdjacentElement("afterend", newP);
               previousType = "DIALOGUE";
             }
             continue;
           }
         }
-        let text = ((_a = p.textContent) == null ? void 0 : _a.trim()) || "";
+        let text = ((_b = p.textContent) == null ? void 0 : _b.trim()) || "";
         if (!text) {
           previousType = null;
           continue;
