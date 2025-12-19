@@ -155,8 +155,8 @@ li.script-scene::marker {
 
 .lp-dialogue {
     /* 編輯時保持靠左或些微縮排即可 -> 改為 10% 以接近閱讀模式 */
-    padding-left: 10% !important;
-    padding-right: 10% !important;
+    padding-left: 7em !important;
+    padding-right: 7em !important;
     text-align: justify !important;
     color: var(--text-normal) !important;
 }
@@ -164,8 +164,8 @@ li.script-scene::marker {
 .lp-parenthetical {
     font-style: italic !important;
     color: var(--text-muted) !important;
-    padding-left: 10% !important;
-    padding-right: 10% !important;
+    padding-left: 7em !important;
+    padding-right: 7em !important;
     /* text-align: center !important; */
 }
 
