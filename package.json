@@ -1,6 +1,6 @@
 {
     "name": "scripter-for-obsidian",
-    "version": "1.3.6",
+    "version": "1.3.7",
     "description": "Standard Fountain-compatible screenplay editor with CJK support (Chinese, Japanese, Korean), intelligent formatting detection, and professional DOCX export.",
     "main": "main.js",
     "scripts": {

@@ -81,7 +81,6 @@
         text-align: left !important;
         color: var(--text-muted) !important;
         padding-left: var(--script-dialogue-margin) !important;
-        display: block !important;
     }
 
     & .lp-transition {

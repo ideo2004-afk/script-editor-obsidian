@@ -19312,7 +19312,7 @@ var ScripterPlugin = class extends import_obsidian2.Plugin {
           const { text: fullSource, lineStart, lineEnd } = sectionInfo;
           sourceLines = fullSource.split("\n").slice(lineStart, lineEnd + 1);
         } else {
-          sourceLines = (el.textContent || "").split("\n");
+          sourceLines = (el.innerText || "").split("\n");
         }
         el.empty();
         sourceLines.forEach((lineText) => {
@@ -19478,6 +19478,7 @@ var ScripterPlugin = class extends import_obsidian2.Plugin {
   // Live Preview Extension (CodeMirror 6)
   // ------------------------------------------------------------------
   livePreviewExtension() {
+    const plugin = this;
     return import_view.ViewPlugin.fromClass(class {
       constructor(view) {
         this.decorations = this.buildDecorations(view);
@@ -19521,20 +19522,21 @@ var ScripterPlugin = class extends import_obsidian2.Plugin {
             } else if (TRANSITION_REGEX.test(text)) {
               lpClass = LP_CLASSES.TRANSITION;
               currentType = "TRANSITION";
-            } else if (PARENTHETICAL_REGEX.test(text)) {
-              lpClass = LP_CLASSES.PARENTHETICAL;
-              currentType = "PARENTHETICAL";
             } else if (OS_DIALOGUE_REGEX.test(text)) {
               lpClass = LP_CLASSES.PARENTHETICAL;
               currentType = "PARENTHETICAL";
-            } else if (text.startsWith(SCRIPT_MARKERS.CHARACTER) || /^[A-Z0-9\s-]{1,30}(\s+\([^)]+\))?$/.test(text) && text.length > 0 || /^[\u4e00-\u9fa5A-Z0-9\s-]{1,30}$/.test(text) || CHARACTER_COLON_REGEX.test(text)) {
-              lpClass = LP_CLASSES.CHARACTER;
-              currentType = "CHARACTER";
-              if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
-                shouldHideMarker = true;
-              }
+            } else if (PARENTHETICAL_REGEX.test(text)) {
+              lpClass = LP_CLASSES.PARENTHETICAL;
+              currentType = "PARENTHETICAL";
             } else {
-              if (previousType === "CHARACTER" || previousType === "PARENTHETICAL" || previousType === "DIALOGUE") {
+              const format = plugin.detectExplicitFormat(trimmed);
+              if (format && format.typeKey === "CHARACTER") {
+                lpClass = LP_CLASSES.CHARACTER;
+                currentType = "CHARACTER";
+                if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+                  shouldHideMarker = true;
+                }
+              } else if (previousType === "CHARACTER" || previousType === "PARENTHETICAL" || previousType === "DIALOGUE") {
                 lpClass = LP_CLASSES.DIALOGUE;
                 currentType = "DIALOGUE";
               } else {
@@ -19590,11 +19592,12 @@ var ScripterPlugin = class extends import_obsidian2.Plugin {
     }
     if (text.startsWith(SCRIPT_MARKERS.CHARACTER))
       return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: true, markerLength: 1, typeKey: "CHARACTER" };
-    const isEnglishName = /^[A-Z0-9\s-]{1,30}(\s+\([^)]+\))?$/.test(text) && text.length > 0;
-    const isChineseName = /^[\u4e00-\u9fa5A-Z0-9\s-]{1,30}$/.test(text) || CHARACTER_COLON_REGEX.test(text);
-    if (isEnglishName || isChineseName) {
+    const hasColon = CHARACTER_COLON_REGEX.test(text);
+    const isAllCapsEng = /^(?=.*[A-Z])[A-Z0-9\s-]{2,30}(\s+\([^)]+\))?$/.test(text);
+    if (hasColon || isAllCapsEng) {
       return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: false, markerLength: 0, typeKey: "CHARACTER" };
     }
+    return null;
     return null;
   }
   renumberScenes(editor) {

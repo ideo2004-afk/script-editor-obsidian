@@ -127,7 +127,8 @@ export default class ScripterPlugin extends Plugin {
                     sourceLines = fullSource.split('\n').slice(lineStart, lineEnd + 1);
                 } else {
                     // Fallback for when sectionInfo is null (common in Reading Mode/PDF)
-                    sourceLines = (el.textContent || "").split('\n');
+                    // Use innerText as HTMLElement to preserve line breaks from <br>
+                    sourceLines = ((el as HTMLElement).innerText || "").split('\n');
                 }
 
                 // Revert to internal div strategy which was confirmed perfect for Reading Mode
@@ -338,6 +339,7 @@ export default class ScripterPlugin extends Plugin {
     // Live Preview Extension (CodeMirror 6)
     // ------------------------------------------------------------------
     livePreviewExtension() {
+        const plugin = this;
         return ViewPlugin.fromClass(class {
             decorations: DecorationSet;
 
@@ -392,26 +394,24 @@ export default class ScripterPlugin extends Plugin {
                             lpClass = LP_CLASSES.TRANSITION;
                             currentType = 'TRANSITION';
                         }
-                        else if (PARENTHETICAL_REGEX.test(text)) {
-                            lpClass = LP_CLASSES.PARENTHETICAL;
-                            currentType = 'PARENTHETICAL';
-                        }
                         else if (OS_DIALOGUE_REGEX.test(text)) {
                             lpClass = LP_CLASSES.PARENTHETICAL;
                             currentType = 'PARENTHETICAL';
                         }
-                        else if (text.startsWith(SCRIPT_MARKERS.CHARACTER) ||
-                            (/^[A-Z0-9\s-]{1,30}(\s+\([^)]+\))?$/.test(text) && text.length > 0) ||
-                            (/^[\u4e00-\u9fa5A-Z0-9\s-]{1,30}$/.test(text)) ||
-                            CHARACTER_COLON_REGEX.test(text)) {
-                            lpClass = LP_CLASSES.CHARACTER;
-                            currentType = 'CHARACTER';
-                            if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
-                                shouldHideMarker = true;
-                            }
+                        else if (PARENTHETICAL_REGEX.test(text)) {
+                            lpClass = LP_CLASSES.PARENTHETICAL;
+                            currentType = 'PARENTHETICAL';
                         }
                         else {
-                            if (previousType === 'CHARACTER' || previousType === 'PARENTHETICAL' || previousType === 'DIALOGUE') {
+                            // Use centralized strict detection
+                            const format = plugin.detectExplicitFormat(trimmed);
+                            if (format && format.typeKey === 'CHARACTER') {
+                                lpClass = LP_CLASSES.CHARACTER;
+                                currentType = 'CHARACTER';
+                                if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+                                    shouldHideMarker = true;
+                                }
+                            } else if (previousType === 'CHARACTER' || previousType === 'PARENTHETICAL' || previousType === 'DIALOGUE') {
                                 lpClass = LP_CLASSES.DIALOGUE;
                                 currentType = 'DIALOGUE';
                             } else {
@@ -471,16 +471,22 @@ export default class ScripterPlugin extends Plugin {
         if (OS_DIALOGUE_REGEX.test(text)) {
             return { cssClass: CSS_CLASSES.PARENTHETICAL, removePrefix: false, markerLength: 0, typeKey: 'PARENTHETICAL' };
         }
+        // Strict Character Identification:
+        // 1. Starts with @
         if (text.startsWith(SCRIPT_MARKERS.CHARACTER))
             return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: true, markerLength: 1, typeKey: 'CHARACTER' };
 
-        // Implicit Character Detection (ALL CAPS English or 1-30 char Chinese/Mixed without punctuation)
-        const isEnglishName = /^[A-Z0-9\s-]{1,30}(\s+\([^)]+\))?$/.test(text) && text.length > 0;
-        const isChineseName = /^[\u4e00-\u9fa5A-Z0-9\s-]{1,30}$/.test(text) || CHARACTER_COLON_REGEX.test(text);
+        // 2. Ends with a colon (captured by regex)
+        const hasColon = CHARACTER_COLON_REGEX.test(text);
 
-        if (isEnglishName || isChineseName) {
+        // 3. Full English CAPS (Must contain at least one A-Z letter and no lowercase)
+        const isAllCapsEng = /^(?=.*[A-Z])[A-Z0-9\s-]{2,30}(\s+\([^)]+\))?$/.test(text);
+
+        if (hasColon || isAllCapsEng) {
             return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: false, markerLength: 0, typeKey: 'CHARACTER' };
         }
+
+        return null;
 
         return null;
     }
