@@ -14,7 +14,7 @@
     font-weight: bold !important;
     text-transform: uppercase;
     text-align: left !important;
-    margin-top: 2em !important;
+    margin-top: 3em !important;
     margin-bottom: 1em !important;
     border-bottom: none !important;
     padding-left: 0 !important;
@@ -23,7 +23,7 @@
 
 /* 針對 Obsidian 列表的特定修正 */
 li.script-scene {
-    margin-top: 2em !important;
+    margin-top: 3em !important;
 }
 
 li.script-scene::marker {
@@ -36,20 +36,20 @@ li.script-scene::marker {
     text-transform: uppercase;
     text-align: center !important;
     padding-left: 0 !important;
-    margin-left: 22% !important;
-    margin-right: 22% !important;
+    margin-left: 9em !important;
+    margin-right: 9em !important;
     margin-top: 1em !important;
     margin-bottom: 0px !important;
     padding-bottom: 0px !important;
     display: block !important;
-    /* font-weight: bold !important; */
 }
 
 /* Dialogue: : or ： */
 .script-dialogue {
-    text-align: justify !important;
-    margin-left: 18% !important;
-    margin-right: 18% !important;
+    /* text-align: justify !important; */
+    text-align: center !important;
+    margin-left: 7em !important;
+    margin-right: 7em !important;
     margin-top: 0px !important;
     margin-bottom: 1em !important;
     display: block !important;
@@ -58,8 +58,8 @@ li.script-scene::marker {
 
 /* Parenthetical: ( */
 .script-parenthetical {
-    margin-left: 18% !important;
-    margin-right: 18% !important;
+    margin-left: 7em !important;
+    margin-right: 7em !important;
     margin-bottom: 0px !important;
     font-style: italic !important;
     display: block !important;
@@ -91,8 +91,8 @@ li.script-scene::marker {
     .script-character,
     p.script-character {
         text-align: center !important;
-        margin-left: 20% !important;
-        margin-right: 20% !important;
+        margin-left: 9em !important;
+        margin-right: 9em !important;
         margin-bottom: 0px !important;
         padding-bottom: 0px !important;
         page-break-after: avoid;
@@ -100,9 +100,9 @@ li.script-scene::marker {
 
     /* Dialogue: Narrower column */
     .script-dialogue {
-        text-align: left !important;
-        margin-left: 8% !important;
-        margin-right: 8% !important;
+        text-align: center !important;
+        margin-left: 7em !important;
+        margin-right: 7em !important;
         margin-top: 0px !important;
         margin-bottom: 1em !important;
         font-weight: normal !important;
@@ -110,11 +110,11 @@ li.script-scene::marker {
     }
 
     .script-parenthetical {
-        margin-left: 10% !important;
-        margin-right: 10% !important;
+        text-align: center !important;
+        margin-left: 7em !important;
+        margin-right: 7em !important;
         margin-top: 0px !important;
         margin-bottom: 0px !important;
-        text-align: left !important;
         page-break-before: avoid;
     }
 
@@ -155,7 +155,7 @@ li.script-scene::marker {
     /* 編輯時保持靠左或些微縮排即可 -> 改為 10% 以接近閱讀模式 */
     padding-left: 7em !important;
     padding-right: 7em !important;
-    text-align: justify !important;
+    text-align: center !important;
     color: var(--text-normal) !important;
 }
 
@@ -164,7 +164,7 @@ li.script-scene::marker {
     color: var(--text-muted) !important;
     padding-left: 7em !important;
     padding-right: 7em !important;
-    /* text-align: center !important; */
+    text-align: center !important;
 }
 
 .lp-transition {

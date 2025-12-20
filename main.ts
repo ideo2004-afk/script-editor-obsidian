@@ -13,6 +13,7 @@ const SCENE_REGEX = /^(\d+[.\s]\s*)?((?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
 const TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
 const PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
 const OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
+const CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30})[:：]\s*(.*)$/;
 
 // CSS Classes (Reading Mode / PDF)
 const CSS_CLASSES = {
@@ -61,9 +62,10 @@ export default class ScripterPlugin extends Plugin {
         this.registerMarkdownPostProcessor((element, context) => {
             // **Scope Check**: Only process if cssclasses includes 'fountain' or 'script'
             const frontmatter = context.frontmatter;
-            const cssClasses = frontmatter?.cssclasses || [];
+            const cssClasses = frontmatter?.cssclasses;
+            const classesArray = Array.isArray(cssClasses) ? cssClasses : (typeof cssClasses === 'string' ? [cssClasses] : []);
 
-            if (!Array.isArray(cssClasses) || (!cssClasses.includes('fountain') && !cssClasses.includes('script'))) {
+            if (!classesArray.includes('fountain') && !classesArray.includes('script')) {
                 return;
             }
 
@@ -215,19 +217,42 @@ export default class ScripterPlugin extends Plugin {
                 const explicitFormat = this.detectExplicitFormat(text);
 
                 if (explicitFormat) {
+                    // Specific Handling for same-line "Character: Dialogue"
+                    const colonMatch = text.match(CHARACTER_COLON_REGEX);
+                    if (colonMatch && colonMatch[2].trim()) {
+                        // Split into Character and Dialogue
+                        p.textContent = colonMatch[1] + (text.includes('：') ? '：' : ':');
+                        this.applyFormatToElement(p, explicitFormat);
+
+                        const dialogueP = createEl('p');
+                        dialogueP.addClass(CSS_CLASSES.DIALOGUE);
+                        dialogueP.textContent = colonMatch[2];
+                        p.insertAdjacentElement('afterend', dialogueP);
+
+                        previousType = 'DIALOGUE';
+                        continue;
+                    }
+
                     this.applyFormatToElement(p, explicitFormat);
                     previousType = explicitFormat.typeKey;
                 } else {
                     // Auto-Dialogue Detection
-                    // Only assume Dialogue if strictly following Character or Parenthetical.
-                    // Consecutive paragraphs of dialogue are rare/bad practice without (cont'd), 
-                    // so we default to Action to prevent misclassifying scene descriptions.
-                    if (previousType === 'CHARACTER' || previousType === 'PARENTHETICAL') {
+                    // Only assume Dialogue if strictly following Character, Parenthetical, or previous Dialogue.
+                    if (previousType === 'CHARACTER' || previousType === 'PARENTHETICAL' || previousType === 'DIALOGUE') {
                         p.addClass(CSS_CLASSES.DIALOGUE);
                         previousType = 'DIALOGUE';
                     } else {
                         p.addClass(CSS_CLASSES.ACTION);
                         previousType = 'ACTION';
+                    }
+                }
+
+                // Parenthetical Inline Styling (Apply to Dialogue and Action)
+                if (previousType === 'DIALOGUE' || previousType === 'ACTION') {
+                    const html = p.innerHTML;
+                    const replaced = html.replace(/(\(.*?\)|（.*?）)/g, '<span class="script-parenthetical-inline">$1</span>');
+                    if (replaced !== html) {
+                        p.innerHTML = replaced;
                     }
                 }
             }
@@ -341,10 +366,13 @@ export default class ScripterPlugin extends Plugin {
                             lpClass = LP_CLASSES.PARENTHETICAL;
                             currentType = 'PARENTHETICAL';
                         }
-                        else if (text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+                        else if (text.startsWith(SCRIPT_MARKERS.CHARACTER) ||
+                            (/^[A-Z0-9\s-]{1,30}(\s+\([^)]+\))?$/.test(text) && text.length > 0) ||
+                            (/^[\u4e00-\u9fa5A-Z0-9\s-]{1,30}$/.test(text)) ||
+                            CHARACTER_COLON_REGEX.test(text)) {
                             lpClass = LP_CLASSES.CHARACTER;
                             currentType = 'CHARACTER';
-                            if (!isCursorOnLine) {
+                            if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
                                 shouldHideMarker = true;
                             }
                         }
@@ -409,6 +437,14 @@ export default class ScripterPlugin extends Plugin {
         }
         if (text.startsWith(SCRIPT_MARKERS.CHARACTER))
             return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: true, markerLength: 1, typeKey: 'CHARACTER' };
+
+        // Implicit Character Detection (ALL CAPS English or 1-30 char Chinese/Mixed without punctuation)
+        const isEnglishName = /^[A-Z0-9\s-]{1,30}(\s+\([^)]+\))?$/.test(text) && text.length > 0;
+        const isChineseName = /^[\u4e00-\u9fa5A-Z0-9\s-]{1,30}$/.test(text) || CHARACTER_COLON_REGEX.test(text);
+
+        if (isEnglishName || isChineseName) {
+            return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: false, markerLength: 0, typeKey: 'CHARACTER' };
+        }
 
         return null;
     }

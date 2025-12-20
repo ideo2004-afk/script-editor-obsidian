@@ -38,6 +38,7 @@ var SCENE_REGEX = /^(\d+[.\s]\s*)?((?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
 var TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
 var PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
 var OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
+var CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30})[:：]\s*(.*)$/;
 var CSS_CLASSES = {
   SCENE: "script-scene",
   CHARACTER: "script-character",
@@ -65,8 +66,9 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
     this.registerMarkdownPostProcessor((element, context) => {
       var _a, _b, _c;
       const frontmatter = context.frontmatter;
-      const cssClasses = (frontmatter == null ? void 0 : frontmatter.cssclasses) || [];
-      if (!Array.isArray(cssClasses) || !cssClasses.includes("fountain") && !cssClasses.includes("script")) {
+      const cssClasses = frontmatter == null ? void 0 : frontmatter.cssclasses;
+      const classesArray = Array.isArray(cssClasses) ? cssClasses : typeof cssClasses === "string" ? [cssClasses] : [];
+      if (!classesArray.includes("fountain") && !classesArray.includes("script")) {
         return;
       }
       const lines = Array.from(element.querySelectorAll("p, div, blockquote, li"));
@@ -162,15 +164,33 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
         }
         const explicitFormat = this.detectExplicitFormat(text);
         if (explicitFormat) {
+          const colonMatch = text.match(CHARACTER_COLON_REGEX);
+          if (colonMatch && colonMatch[2].trim()) {
+            p.textContent = colonMatch[1] + (text.includes("\uFF1A") ? "\uFF1A" : ":");
+            this.applyFormatToElement(p, explicitFormat);
+            const dialogueP = createEl("p");
+            dialogueP.addClass(CSS_CLASSES.DIALOGUE);
+            dialogueP.textContent = colonMatch[2];
+            p.insertAdjacentElement("afterend", dialogueP);
+            previousType = "DIALOGUE";
+            continue;
+          }
           this.applyFormatToElement(p, explicitFormat);
           previousType = explicitFormat.typeKey;
         } else {
-          if (previousType === "CHARACTER" || previousType === "PARENTHETICAL") {
+          if (previousType === "CHARACTER" || previousType === "PARENTHETICAL" || previousType === "DIALOGUE") {
             p.addClass(CSS_CLASSES.DIALOGUE);
             previousType = "DIALOGUE";
           } else {
             p.addClass(CSS_CLASSES.ACTION);
             previousType = "ACTION";
+          }
+        }
+        if (previousType === "DIALOGUE" || previousType === "ACTION") {
+          const html = p.innerHTML;
+          const replaced = html.replace(/(\(.*?\)|（.*?）)/g, '<span class="script-parenthetical-inline">$1</span>');
+          if (replaced !== html) {
+            p.innerHTML = replaced;
           }
         }
       }
@@ -255,10 +275,10 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
             } else if (PARENTHETICAL_REGEX.test(text)) {
               lpClass = LP_CLASSES.PARENTHETICAL;
               currentType = "PARENTHETICAL";
-            } else if (text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+            } else if (text.startsWith(SCRIPT_MARKERS.CHARACTER) || /^[A-Z0-9\s-]{1,30}(\s+\([^)]+\))?$/.test(text) && text.length > 0 || /^[\u4e00-\u9fa5A-Z0-9\s-]{1,30}$/.test(text) || CHARACTER_COLON_REGEX.test(text)) {
               lpClass = LP_CLASSES.CHARACTER;
               currentType = "CHARACTER";
-              if (!isCursorOnLine) {
+              if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
                 shouldHideMarker = true;
               }
             } else if (OS_DIALOGUE_REGEX.test(text)) {
@@ -315,6 +335,11 @@ var ScripterPlugin = class extends import_obsidian.Plugin {
     }
     if (text.startsWith(SCRIPT_MARKERS.CHARACTER))
       return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: true, markerLength: 1, typeKey: "CHARACTER" };
+    const isEnglishName = /^[A-Z0-9\s-]{1,30}(\s+\([^)]+\))?$/.test(text) && text.length > 0;
+    const isChineseName = /^[\u4e00-\u9fa5A-Z0-9\s-]{1,30}$/.test(text) || CHARACTER_COLON_REGEX.test(text);
+    if (isEnglishName || isChineseName) {
+      return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: false, markerLength: 0, typeKey: "CHARACTER" };
+    }
     return null;
   }
   applyFormatToElement(p, format) {
