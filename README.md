@@ -3,8 +3,7 @@
 **Turn Obsidian into a fast, distraction-free screenplay writer.**  
 **讓 Obsidian 變身為輕量、免費且專業的美式劇本寫作軟體。**
 
-Scripter for Obsidian is a Standard screenplay editor with CJK support (Chinese, Japanese, Korean), intelligent formatting detection, and professional DOCX export.
-標準美式劇本編輯器（特別相容於中文等CJK字型與習慣），全自動偵測劇本格式，並提供docx輸出。
+Standard Fountain-compatible screenplay editor with CJK support (Chinese, Japanese, Korean), intelligent formatting detection, and professional DOCX export.
 It now features a powerful **Live Preview** mode, meaning you see the correct formatting while you write, without needing to switch modes.
 
 ## ✨ Philosophy (設計哲學)

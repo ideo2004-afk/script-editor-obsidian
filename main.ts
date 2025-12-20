@@ -545,35 +545,46 @@ class ScripterSettingTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl } = this;
-
         containerEl.empty();
 
         new Setting(containerEl)
             .setName('Usage guide')
             .setHeading();
 
-        // 1. Setup Instructions
+        // 1. Basic Setup
         new Setting(containerEl)
-            .setName('Getting started')
-            .setDesc('How to activate screenplay formatting for a specific note.')
+            .setName('1. Basic setup')
+            .setDesc('How to activate formatting for a note.')
             .setHeading();
 
-        const setupInfo = containerEl.createEl('div', { cls: 'setting-item-description' });
-        setupInfo.createEl('p', { text: 'To enable Scripter features (Live Preview & Print Formatting), adds the following to your note\'s frontmatter (Properties):' });
+        const setupInfo = containerEl.createDiv();
+        setupInfo.createEl('p', { text: 'Add the following to your note\'s frontmatter (Properties) to enable screenplay mode:' });
         setupInfo.createEl('pre', { text: '---\ncssclasses: fountain\n---' });
-        setupInfo.createEl('p', { text: 'Or use "script" instead of "fountain".' });
+        setupInfo.createEl('p', { text: 'Alternatively, you can use "cssclasses: script".' });
 
         containerEl.createEl('br');
 
-        // 2. Syntax Guide
+        // 2. Quick creation & features
         new Setting(containerEl)
-            .setName('Syntax reference')
-            .setDesc('Basic rules for formatting your screenplay.')
+            .setName('2. Quick features')
+            .setDesc('Automation and creation tools.')
             .setHeading();
 
-        const syntaxDiv = containerEl.createEl('div');
+        const featuresDiv = containerEl.createDiv();
+        featuresDiv.createEl('li', { text: 'New Script Button: Look for the quill icon in the left ribbon to quickly create a new screenplay.' });
+        featuresDiv.createEl('li', { text: 'Renumber Scenes: Right-click in the editor to re-order your scene numbers automatically.' });
+        featuresDiv.createEl('li', { text: 'Professional Export: Right-click and choose "Export to .docx" to generate a Hollywood-standard Word document.' });
 
-        // Helper to format table rows
+        containerEl.createEl('br');
+
+        // 3. Screenplay Syntax
+        new Setting(containerEl)
+            .setName('3. Screenplay syntax')
+            .setDesc('Basic rules for Fountain-compatible formatting.')
+            .setHeading();
+
+        const syntaxDiv = containerEl.createDiv();
+
         const createRow = (title: string, syntax: string, desc: string) => {
             const p = syntaxDiv.createEl('p');
             p.createEl('strong', { text: title + ': ' });
@@ -582,16 +593,16 @@ class ScripterSettingTab extends PluginSettingTab {
         };
 
         createRow('Scene Heading', 'INT. / EXT.', 'Automatic bold & uppercase.');
-        createRow('Character', '@NAME', 'Centered. "@" is hidden when not editing.');
+        createRow('Character', '@NAME', 'Centered. "@" is hidden in preview.');
         createRow('Dialogue', 'Text below Character', 'Automatically indented.');
-        createRow('Parenthetical', '(emotion) / OS: / VO:', 'Centered & Italic.');
+        createRow('Parenthetical', '(emotion) / OS: / VO:', 'Centered & italic.');
         createRow('Transition', 'CUT TO: / FADE IN', 'Right aligned.');
 
         containerEl.createEl('br');
 
-        // 3. Support
+        // 4. Support
         const supportDiv = containerEl.createEl('div', { attr: { style: 'margin-top: 20px; border-top: 1px solid var(--background-modifier-border); padding-top: 20px;' } });
-        supportDiv.createEl('p', { text: 'If you enjoy using Scripter, consider support its development!' });
+        supportDiv.createEl('p', { text: 'If you enjoy using Scripter, consider supporting its development!' });
         const link = supportDiv.createEl('a', { href: 'https://buymeacoffee.com/ideo2004c' });
         link.createEl('img', {
             attr: {

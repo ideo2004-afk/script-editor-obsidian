@@ -19562,14 +19562,20 @@ var ScripterSettingTab = class extends import_obsidian.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian.Setting(containerEl).setName("Usage guide").setHeading();
-    new import_obsidian.Setting(containerEl).setName("Getting started").setDesc("How to activate screenplay formatting for a specific note.").setHeading();
-    const setupInfo = containerEl.createEl("div", { cls: "setting-item-description" });
-    setupInfo.createEl("p", { text: "To enable Scripter features (Live Preview & Print Formatting), adds the following to your note's frontmatter (Properties):" });
+    new import_obsidian.Setting(containerEl).setName("1. Basic setup").setDesc("How to activate formatting for a note.").setHeading();
+    const setupInfo = containerEl.createDiv();
+    setupInfo.createEl("p", { text: "Add the following to your note's frontmatter (Properties) to enable screenplay mode:" });
     setupInfo.createEl("pre", { text: "---\ncssclasses: fountain\n---" });
-    setupInfo.createEl("p", { text: 'Or use "script" instead of "fountain".' });
+    setupInfo.createEl("p", { text: 'Alternatively, you can use "cssclasses: script".' });
     containerEl.createEl("br");
-    new import_obsidian.Setting(containerEl).setName("Syntax reference").setDesc("Basic rules for formatting your screenplay.").setHeading();
-    const syntaxDiv = containerEl.createEl("div");
+    new import_obsidian.Setting(containerEl).setName("2. Quick features").setDesc("Automation and creation tools.").setHeading();
+    const featuresDiv = containerEl.createDiv();
+    featuresDiv.createEl("li", { text: "New Script Button: Look for the quill icon in the left ribbon to quickly create a new screenplay." });
+    featuresDiv.createEl("li", { text: "Renumber Scenes: Right-click in the editor to re-order your scene numbers automatically." });
+    featuresDiv.createEl("li", { text: 'Professional Export: Right-click and choose "Export to .docx" to generate a Hollywood-standard Word document.' });
+    containerEl.createEl("br");
+    new import_obsidian.Setting(containerEl).setName("3. Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
+    const syntaxDiv = containerEl.createDiv();
     const createRow = (title, syntax2, desc) => {
       const p = syntaxDiv.createEl("p");
       p.createEl("strong", { text: title + ": " });
@@ -19577,13 +19583,13 @@ var ScripterSettingTab = class extends import_obsidian.PluginSettingTab {
       p.createSpan({ text: " \u2014 " + desc });
     };
     createRow("Scene Heading", "INT. / EXT.", "Automatic bold & uppercase.");
-    createRow("Character", "@NAME", 'Centered. "@" is hidden when not editing.');
+    createRow("Character", "@NAME", 'Centered. "@" is hidden in preview.');
     createRow("Dialogue", "Text below Character", "Automatically indented.");
-    createRow("Parenthetical", "(emotion) / OS: / VO:", "Centered & Italic.");
+    createRow("Parenthetical", "(emotion) / OS: / VO:", "Centered & italic.");
     createRow("Transition", "CUT TO: / FADE IN", "Right aligned.");
     containerEl.createEl("br");
     const supportDiv = containerEl.createEl("div", { attr: { style: "margin-top: 20px; border-top: 1px solid var(--background-modifier-border); padding-top: 20px;" } });
-    supportDiv.createEl("p", { text: "If you enjoy using Scripter, consider support its development!" });
+    supportDiv.createEl("p", { text: "If you enjoy using Scripter, consider supporting its development!" });
     const link = supportDiv.createEl("a", { href: "https://buymeacoffee.com/ideo2004c" });
     link.createEl("img", {
       attr: {
