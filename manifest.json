@@ -3,7 +3,7 @@
     "name": "Scripter",
     "version": "1.3.7",
     "minAppVersion": "1.0.0",
-    "description": "Standard Fountain-compatible screenplay editor with CJK support (Chinese, Japanese, Korean), intelligent formatting detection, and professional DOCX export.",
+    "description": "Standard Fountain-compatible screenplay editor with CJK support.",
     "authorUrl": "https://github.com/ideo2004-afk",
     "isDesktopOnly": false
 }
