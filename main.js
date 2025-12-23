@@ -29,7 +29,7 @@ __export(main_exports, {
   PARENTHETICAL_REGEX: () => PARENTHETICAL_REGEX,
   SCENE_REGEX: () => SCENE_REGEX,
   TRANSITION_REGEX: () => TRANSITION_REGEX,
-  default: () => ScripterPlugin
+  default: () => ScriptEditorPlugin
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian2 = require("obsidian");
@@ -19129,7 +19129,7 @@ var import_view = require("@codemirror/view");
 
 // sceneView.ts
 var import_obsidian = require("obsidian");
-var SCENE_VIEW_TYPE = "scripter-scene-view";
+var SCENE_VIEW_TYPE = "script-editor-scene-view";
 var SceneView = class extends import_obsidian.ItemView {
   constructor(leaf) {
     super(leaf);
@@ -19195,11 +19195,11 @@ var SceneView = class extends import_obsidian.ItemView {
     items.sort((a, b) => a.line - b.line);
     items.forEach((item) => {
       const itemEl = listEl.createDiv({
-        cls: `scripter-scene-item scripter-item-${item.type} ${item.level ? "scripter-item-h" + item.level : ""}`
+        cls: `script-editor-scene-item script-editor-item-${item.type} ${item.level ? "script-editor-item-h" + item.level : ""}`
       });
       const linkEl = itemEl.createEl("a", {
         text: item.text,
-        cls: "scripter-scene-link"
+        cls: "script-editor-scene-link"
       });
       linkEl.onClickEvent((e) => {
         e.preventDefault();
@@ -19251,13 +19251,18 @@ var LP_CLASSES = {
   TRANSITION: "lp-transition",
   SYMBOL: "lp-marker-symbol"
 };
-var ScripterPlugin = class extends import_obsidian2.Plugin {
+var DEFAULT_SETTINGS = {
+  mySetting: "default"
+};
+var ScriptEditorPlugin = class extends import_obsidian2.Plugin {
   async onload() {
+    this.docxExporter = new DocxExporter();
     this.registerView(
       SCENE_VIEW_TYPE,
       (leaf) => new SceneView(leaf)
     );
-    this.addSettingTab(new ScripterSettingTab(this.app, this));
+    await this.loadSettings();
+    this.addSettingTab(new ScriptEditorSettingTab(this.app, this));
     this.addCommand({
       id: "renumber-scenes",
       name: "Renumber scenes",
@@ -19367,7 +19372,7 @@ var ScripterPlugin = class extends import_obsidian2.Plugin {
           return;
         }
         menu.addItem((item) => {
-          item.setTitle("Scripter").setIcon("film");
+          item.setTitle("Script Editor").setIcon("film");
           const subMenu = item.setSubmenu();
           subMenu.addItem((startItem) => {
             startItem.setTitle("Scene heading").setIcon("clapperboard");
@@ -19710,8 +19715,14 @@ var ScripterPlugin = class extends import_obsidian2.Plugin {
     await leaf.openFile(newFile);
     this.app.workspace.trigger("rename", newFile, newFile.path);
   }
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
 };
-var ScripterSettingTab = class extends import_obsidian2.PluginSettingTab {
+var ScriptEditorSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -19748,7 +19759,7 @@ var ScripterSettingTab = class extends import_obsidian2.PluginSettingTab {
     createRow("Transition", "CUT TO: / FADE IN", "Right aligned.");
     containerEl.createEl("br");
     const supportDiv = containerEl.createEl("div", { attr: { style: "margin-top: 20px; border-top: 1px solid var(--background-modifier-border); padding-top: 20px;" } });
-    supportDiv.createEl("p", { text: "If you enjoy using Scripter, consider supporting its development!" });
+    supportDiv.createEl("p", { text: "If you enjoy using Script Editor, consider supporting its development!" });
     const link = supportDiv.createEl("a", { href: "https://buymeacoffee.com/ideo2004c" });
     link.createEl("img", {
       attr: {

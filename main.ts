@@ -44,12 +44,25 @@ interface ScriptFormat {
     typeKey: string;
 }
 
+interface ScriptEditorSettings {
+    mySetting: string;
+}
+
+const DEFAULT_SETTINGS: ScriptEditorSettings = {
+    mySetting: 'default'
+}
+
 interface ExtendedMenuItem extends MenuItem {
     setSubmenu(): Menu;
 }
 
-export default class ScripterPlugin extends Plugin {
+export default class ScriptEditorPlugin extends Plugin {
+    docxExporter: DocxExporter;
+    settings: ScriptEditorSettings;
+
     async onload() {
+        this.docxExporter = new DocxExporter();
+
         // 1. Register Scene View
         this.registerView(
             SCENE_VIEW_TYPE,
@@ -57,7 +70,8 @@ export default class ScripterPlugin extends Plugin {
         );
 
         // 2. Settings / Help Tab
-        this.addSettingTab(new ScripterSettingTab(this.app, this));
+        await this.loadSettings();
+        this.addSettingTab(new ScriptEditorSettingTab(this.app, this));
 
         // 2. Command: Renumber Scenes
         this.addCommand({
@@ -195,7 +209,7 @@ export default class ScripterPlugin extends Plugin {
                 }
 
                 menu.addItem((item: MenuItem) => {
-                    item.setTitle("Scripter").setIcon("film");
+                    item.setTitle("Script Editor").setIcon("film");
                     const subMenu = (item as ExtendedMenuItem).setSubmenu();
 
                     // Scene Heading Submenu
@@ -617,12 +631,20 @@ export default class ScripterPlugin extends Plugin {
         // @ts-ignore - internal API
         this.app.workspace.trigger("rename", newFile, newFile.path);
     }
+
+    async loadSettings() {
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    }
+
+    async saveSettings() {
+        await this.saveData(this.settings);
+    }
 }
 
-class ScripterSettingTab extends PluginSettingTab {
-    plugin: ScripterPlugin;
+class ScriptEditorSettingTab extends PluginSettingTab {
+    plugin: ScriptEditorPlugin;
 
-    constructor(app: App, plugin: ScripterPlugin) {
+    constructor(app: App, plugin: ScriptEditorPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -687,7 +709,7 @@ class ScripterSettingTab extends PluginSettingTab {
 
         // 4. Support
         const supportDiv = containerEl.createEl('div', { attr: { style: 'margin-top: 20px; border-top: 1px solid var(--background-modifier-border); padding-top: 20px;' } });
-        supportDiv.createEl('p', { text: 'If you enjoy using Scripter, consider supporting its development!' });
+        supportDiv.createEl('p', { text: 'If you enjoy using Script Editor, consider supporting its development!' });
         const link = supportDiv.createEl('a', { href: 'https://buymeacoffee.com/ideo2004c' });
         link.createEl('img', {
             attr: {

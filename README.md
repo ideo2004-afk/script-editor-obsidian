@@ -1,10 +1,6 @@
-# Scripter v1.3.6
+# Script Editor v1.3.7
 
-Scripter is a Standard Fountain-compatible screenplay editor with CJK support (Chinese, Japanese, Korean), intelligent formatting detection, and professional DOCX export.
-
-- **Live Preview (所見即所得)**: Formatting is applied in real-time as you type.
-- **Minimal Syntax (極簡語法)**: Only recognizes characters based on strict professional habits (ALL CAPS, @ markers, or Colon suffix) to avoid misidentifying narrative descriptions.
-- **Universal Detection (萬用識別)**: Reliable detection for Chinese, English, and Mixed character names without interfering with your story text.
+Script Editor is a Fountain-compatible screenplay editor with CJK support (Chinese, Japanese, Korean), intelligent formatting detection, and professional DOCX export.
 
 ---
 
@@ -13,7 +9,7 @@ Scripter is a Standard Fountain-compatible screenplay editor with CJK support (C
 ### 1. Scene Headings (場景)
 Start a line with standard screenplay prefixes. They will automatically bold.
 *   **Syntax**: `INT.`, `EXT.`, `INT./EXT.`, `I/E.`, or start a line with a period `.` to force a scene heading.
-*   **Example**: 
+
     ```
     INT. HOUSE - NIGHT
     ```
@@ -22,7 +18,7 @@ Start a line with standard screenplay prefixes. They will automatically bold.
 *   **A. Explicit Marker (顯式標記)**: Prefix with `@`.
     *   `@JORDAN`, `@娟秀`
     *   *(The `@` symbol is automatically hidden in Live Preview and Reading Mode)*
-*   **B. Colon Suffix (冒號習慣)**: Character name followed by a colon (`:` or `：`).
+*   **B. Colon Suffix (冒號)**: Character name followed by a colon (`:` or `：`).
     *   `娟秀：肚子餓了。` -> Centered name, dialogue below.
     *   `ALEX: Hello.` -> Works for all languages.
 *   **C. ALL CAPS English (全大寫英文)**:
@@ -30,8 +26,7 @@ Start a line with standard screenplay prefixes. They will automatically bold.
     *   *(Note: Must contain at least one letter A-Z to prevent pure numbers/dates from being misidentified)*
 
 ### 3. Dialogue (對白)
-**Automatic.** Any line immediately following a Character, Parenthetical, or another Dialogue line is treated as Dialogue (indented).
-*   **Example**:
+Any line immediately following a Character, Parenthetical, or another Dialogue line is treated as Dialogue (indented).
 
     @JOKER
     Why so serious?
@@ -42,9 +37,9 @@ Start a line with standard screenplay prefixes. They will automatically bold.
 
 ### 4. Parentheticals / Extensions (旁白/情緒/畫外音)
 Use parentheses `()` `（）` or standard prefixes `VO:` / `OS:`. They will be centered and italicized.
-*   **Syntax**: `(emotion)`, `（情緒）`, `VO: Text`, `OS: Text`
-*   **Example**:
-    ```text
+*   **Syntax**: `(emotion)`, `VO: Text`, `OS: Text`
+
+    ```
     @BATMAN
     (struggling)
     Where is she?
@@ -67,7 +62,7 @@ Easily create new script files pre-configured with the correct metadata (`csscla
 - **Context Menu**: Right-click on any folder and select **New script**.
 - **Command Palette**: Search for `Create new script`.
 
-### 📄 Professional DOCX Export (專業 Word 匯出)
+### 📄 DOCX Export (Word 匯出)
 The plugin features a high-fidelity Word export engine for industry-standard screenplay documents.
 - **Editor**: Right-click anywhere in the script -> **Export to .docx**.
 - **File Explorer**: Right-click on any script file -> **Export to .docx**.

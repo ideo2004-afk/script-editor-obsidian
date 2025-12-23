@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownView } from 'obsidian';
 import { SCENE_REGEX } from './main';
 
-export const SCENE_VIEW_TYPE = 'scripter-scene-view';
+export const SCENE_VIEW_TYPE = 'script-editor-scene-view';
 
 export class SceneView extends ItemView {
     constructor(leaf: WorkspaceLeaf) {
@@ -94,12 +94,12 @@ export class SceneView extends ItemView {
         // Render items
         items.forEach(item => {
             const itemEl = listEl.createDiv({
-                cls: `scripter-scene-item scripter-item-${item.type} ${item.level ? 'scripter-item-h' + item.level : ''}`
+                cls: `script-editor-scene-item script-editor-item-${item.type} ${item.level ? 'script-editor-item-h' + item.level : ''}`
             });
 
             const linkEl = itemEl.createEl('a', {
                 text: item.text,
-                cls: 'scripter-scene-link'
+                cls: 'script-editor-scene-link'
             });
 
             linkEl.onClickEvent((e) => {

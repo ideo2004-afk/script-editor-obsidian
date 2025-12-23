@@ -102,7 +102,7 @@
 }
 
 /* Scene Mode Sidebar View Styling */
-.scripter-scene-view-container {
+.script-editor-scene-view-container {
     padding: 8px 12px;
     height: 100%;
     overflow-y: auto;
@@ -110,7 +110,7 @@
     /* Closer to native outline/nav size */
 }
 
-.scripter-scene-view-title h4 {
+.script-editor-scene-view-title h4 {
     margin: 0;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--divider-color);
@@ -121,11 +121,11 @@
     letter-spacing: 0.05em;
 }
 
-.scripter-scene-view-list {
+.script-editor-scene-view-list {
     margin-top: 8px;
 }
 
-.scripter-scene-item {
+.script-editor-scene-item {
     margin: 2px 0;
     padding: 3px 6px;
     border-radius: var(--radius-s);
@@ -138,26 +138,26 @@
         background-color: var(--nav-item-background-hover);
     }
 
-    &.scripter-item-h1 {
+    &.script-editor-item-h1 {
         border-left: 3px solid var(--text-accent);
         padding-left: 8px;
         font-weight: 600;
         color: var(--nav-item-color);
     }
 
-    &.scripter-item-h2 {
+    &.script-editor-item-h2 {
         margin-left: 8px;
         font-weight: 500;
         color: var(--nav-item-color);
     }
 
-    &.scripter-item-h3 {
+    &.script-editor-item-h3 {
         margin-left: 16px;
         font-style: italic;
         color: var(--nav-item-color);
     }
 
-    &.scripter-item-scene {
+    &.script-editor-item-scene {
         margin-left: 12px;
         font-family: var(--font-monospace);
         font-size: 0.9em;
@@ -167,7 +167,7 @@
     }
 }
 
-.scripter-scene-link {
+.script-editor-scene-link {
     text-decoration: none !important;
     color: inherit !important;
     display: block;
