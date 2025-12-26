@@ -19133,6 +19133,8 @@ var SCENE_VIEW_TYPE = "script-editor-scene-view";
 var SceneView = class extends import_obsidian.ItemView {
   constructor(leaf) {
     super(leaf);
+    this.lastFilePath = null;
+    this.foldedHeadings = /* @__PURE__ */ new Set();
   }
   getViewType() {
     return SCENE_VIEW_TYPE;
@@ -19148,12 +19150,15 @@ var SceneView = class extends import_obsidian.ItemView {
   }
   async onClose() {
   }
+  // Stores line numbers of folded headers as strings
   async updateView() {
-    var _a;
+    var _a, _b;
     const container = this.containerEl.children[1];
+    const file = this.app.workspace.getActiveFile();
+    const scrollPos = file && this.lastFilePath === file.path ? container.scrollTop : 0;
+    this.lastFilePath = (file == null ? void 0 : file.path) || null;
     container.empty();
     container.addClass("scripter-scene-view-container");
-    const file = this.app.workspace.getActiveFile();
     if (!file) {
       container.createEl("div", { text: "No active file", cls: "pane-empty" });
       return;
@@ -19182,26 +19187,77 @@ var SceneView = class extends import_obsidian.ItemView {
         });
       }
     });
+    const settings = (_b = this.app.plugins.getPlugin("script-editor")) == null ? void 0 : _b.settings;
+    const summaryLength = settings !== void 0 && settings.summaryLength !== void 0 ? settings.summaryLength : 50;
     lines.forEach((line, index) => {
       const trimmed = line.trim();
       if (SCENE_REGEX.test(trimmed)) {
+        let summary = "";
+        let scanIdx = index + 1;
+        while (summary.length < summaryLength && scanIdx < lines.length) {
+          const scanLine = lines[scanIdx].trim();
+          if (scanLine && !SCENE_REGEX.test(scanLine) && !scanLine.startsWith("#")) {
+            const clean = scanLine.replace(/^[@.((（].+?[)）:]?|[:：]/g, "").trim();
+            summary += (summary ? " " : "") + clean;
+          }
+          if (SCENE_REGEX.test(scanLine) || scanLine.startsWith("#"))
+            break;
+          scanIdx++;
+        }
+        if (summary.length > summaryLength)
+          summary = summary.substring(0, summaryLength) + "...";
         items.push({
           line: index,
           text: trimmed,
-          type: "scene"
+          type: "scene",
+          summary
         });
       }
     });
     items.sort((a, b) => a.line - b.line);
+    let currentFoldLevel = null;
     items.forEach((item) => {
+      if (currentFoldLevel !== null) {
+        if (item.type === "scene" || item.level && item.level > currentFoldLevel) {
+          return;
+        } else {
+          currentFoldLevel = null;
+        }
+      }
       const itemEl = listEl.createDiv({
         cls: `script-editor-scene-item script-editor-item-${item.type} ${item.level ? "script-editor-item-h" + item.level : ""}`
       });
-      const linkEl = itemEl.createEl("a", {
+      if (item.type === "heading" && (item.level === 1 || item.level === 2)) {
+        const isFolded = this.foldedHeadings.has(item.line.toString());
+        const foldIcon = itemEl.createSpan({
+          cls: `script-editor-fold-icon ${isFolded ? "is-collapsed" : ""}`
+        });
+        foldIcon.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+        foldIcon.onClickEvent((e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (isFolded) {
+            this.foldedHeadings.delete(item.line.toString());
+          } else {
+            this.foldedHeadings.add(item.line.toString());
+          }
+          this.updateView();
+        });
+        if (isFolded)
+          currentFoldLevel = item.level;
+      }
+      const contentContainer = itemEl.createDiv({ cls: "script-editor-scene-info" });
+      const linkEl = contentContainer.createEl("a", {
         text: item.text,
         cls: "script-editor-scene-link"
       });
-      linkEl.onClickEvent((e) => {
+      if (item.type === "scene" && item.summary) {
+        contentContainer.createDiv({
+          text: item.summary,
+          cls: "script-editor-scene-summary"
+        });
+      }
+      itemEl.onClickEvent((e) => {
         e.preventDefault();
         this.navToLine(file, item.line);
       });
@@ -19209,6 +19265,7 @@ var SceneView = class extends import_obsidian.ItemView {
     if (items.length === 0) {
       listEl.createEl("div", { text: "No headings or scenes found", cls: "pane-empty" });
     }
+    container.scrollTop = scrollPos;
   }
   async navToLine(file, line) {
     const leaf = this.app.workspace.getMostRecentLeaf();
@@ -19252,9 +19309,14 @@ var LP_CLASSES = {
   SYMBOL: "lp-marker-symbol"
 };
 var DEFAULT_SETTINGS = {
-  mySetting: "default"
+  mySetting: "default",
+  summaryLength: 50
 };
 var ScriptEditorPlugin = class extends import_obsidian2.Plugin {
+  constructor() {
+    super(...arguments);
+    this.lastActiveFile = null;
+  }
   async onload() {
     this.docxExporter = new DocxExporter();
     this.registerView(
@@ -19435,10 +19497,10 @@ var ScriptEditorPlugin = class extends import_obsidian2.Plugin {
       })
     );
     this.registerEvent(
-      this.app.workspace.on("active-leaf-change", () => this.refreshSceneView())
+      this.app.workspace.on("active-leaf-change", () => this.refreshSceneView(false))
     );
     this.registerEvent(
-      this.app.metadataCache.on("changed", () => this.refreshSceneView())
+      this.app.metadataCache.on("changed", () => this.refreshSceneView(true))
     );
     this.app.workspace.onLayoutReady(() => {
       this.initSceneView();
@@ -19469,7 +19531,12 @@ var ScriptEditorPlugin = class extends import_obsidian2.Plugin {
       workspace.revealLeaf(leaf);
     }
   }
-  refreshSceneView() {
+  refreshSceneView(force = false) {
+    const activeFile = this.app.workspace.getActiveFile();
+    if (!force && (activeFile == null ? void 0 : activeFile.path) === this.lastActiveFile) {
+      return;
+    }
+    this.lastActiveFile = (activeFile == null ? void 0 : activeFile.path) || null;
     const leaves = this.app.workspace.getLeavesOfType(SCENE_VIEW_TYPE);
     leaves.forEach((leaf) => {
       if (leaf.view instanceof SceneView) {
@@ -19731,6 +19798,14 @@ var ScriptEditorSettingTab = class extends import_obsidian2.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian2.Setting(containerEl).setName("Usage guide").setHeading();
+    new import_obsidian2.Setting(containerEl).setName("Scene preview summary length").setDesc("Number of characters to show as a preview for each scene in the sidebar.").addText((text) => text.setPlaceholder("50").setValue(this.plugin.settings.summaryLength.toString()).onChange(async (value) => {
+      const num = parseInt(value);
+      if (!isNaN(num) && num >= 0) {
+        this.plugin.settings.summaryLength = num;
+        await this.plugin.saveSettings();
+        this.plugin.refreshSceneView();
+      }
+    }));
     new import_obsidian2.Setting(containerEl).setName("1. Basic setup").setDesc("How to activate formatting for a note.").setHeading();
     const setupInfo = containerEl.createDiv();
     setupInfo.createEl("p", { text: "Add the following to your note's frontmatter (Properties) to enable screenplay mode:" });

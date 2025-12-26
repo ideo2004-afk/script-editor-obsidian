@@ -138,6 +138,31 @@
         background-color: var(--nav-item-background-hover);
     }
 
+    & .script-editor-fold-icon {
+        padding: 4px;
+        margin-right: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-s);
+        color: var(--text-faint);
+        transition: transform 0.15s ease, color 0.1s ease;
+        cursor: pointer;
+
+        &:hover {
+            color: var(--text-normal);
+            background-color: var(--background-modifier-hover);
+        }
+
+        &.is-collapsed {
+            transform: rotate(-90deg);
+        }
+
+        & svg {
+            display: block;
+        }
+    }
+
     &.script-editor-item-h1 {
         border-left: 3px solid var(--text-accent);
         padding-left: 8px;
@@ -172,7 +197,29 @@
     color: inherit !important;
     display: block;
     width: 100%;
-    white-space: nowrap;
+    white-space: normal;
+    /* Allow wrapping */
+    line-height: 1.3;
+}
+
+.script-editor-scene-info {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     overflow: hidden;
-    text-overflow: ellipsis;
+    padding: 2px 0;
+}
+
+.script-editor-scene-summary {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    white-space: normal;
+    /* Allow wrapping */
+    margin-top: 4px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    /* Limit to 3 lines for readability */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }

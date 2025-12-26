@@ -46,10 +46,12 @@ interface ScriptFormat {
 
 interface ScriptEditorSettings {
     mySetting: string;
+    summaryLength: number;
 }
 
 const DEFAULT_SETTINGS: ScriptEditorSettings = {
-    mySetting: 'default'
+    mySetting: 'default',
+    summaryLength: 50
 }
 
 interface ExtendedMenuItem extends MenuItem {
@@ -294,10 +296,10 @@ export default class ScriptEditorPlugin extends Plugin {
         );
 
         this.registerEvent(
-            this.app.workspace.on('active-leaf-change', () => this.refreshSceneView())
+            this.app.workspace.on('active-leaf-change', () => this.refreshSceneView(false))
         );
         this.registerEvent(
-            this.app.metadataCache.on('changed', () => this.refreshSceneView())
+            this.app.metadataCache.on('changed', () => this.refreshSceneView(true))
         );
 
         // 7. Auto-initialize Scene View in Sidebar
@@ -305,7 +307,6 @@ export default class ScriptEditorPlugin extends Plugin {
             this.initSceneView();
         });
     }
-
     async initSceneView() {
         if (this.app.workspace.getLeavesOfType(SCENE_VIEW_TYPE).length > 0) {
             return;
@@ -336,7 +337,14 @@ export default class ScriptEditorPlugin extends Plugin {
         }
     }
 
-    refreshSceneView() {
+    private lastActiveFile: string | null = null;
+    refreshSceneView(force = false) {
+        const activeFile = this.app.workspace.getActiveFile();
+        if (!force && activeFile?.path === this.lastActiveFile) {
+            return; // Skip if just a focus change within the same file
+        }
+        this.lastActiveFile = activeFile?.path || null;
+
         const leaves = this.app.workspace.getLeavesOfType(SCENE_VIEW_TYPE);
         leaves.forEach(leaf => {
             if (leaf.view instanceof SceneView) {
@@ -656,6 +664,21 @@ class ScriptEditorSettingTab extends PluginSettingTab {
         new Setting(containerEl)
             .setName('Usage guide')
             .setHeading();
+
+        new Setting(containerEl)
+            .setName('Scene preview summary length')
+            .setDesc('Number of characters to show as a preview for each scene in the sidebar.')
+            .addText(text => text
+                .setPlaceholder('50')
+                .setValue(this.plugin.settings.summaryLength.toString())
+                .onChange(async (value) => {
+                    const num = parseInt(value);
+                    if (!isNaN(num) && num >= 0) {
+                        this.plugin.settings.summaryLength = num;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshSceneView();
+                    }
+                }));
 
         // 1. Basic Setup
         new Setting(containerEl)

@@ -28,12 +28,20 @@ export class SceneView extends ItemView {
         // Cleanup if needed
     }
 
+    private lastFilePath: string | null = null;
+    private foldedHeadings: Set<string> = new Set(); // Stores line numbers of folded headers as strings
+
     async updateView() {
-        const container = this.containerEl.children[1];
+        const container = this.containerEl.children[1] as HTMLElement;
+        const file = this.app.workspace.getActiveFile();
+
+        // Save scroll position if we are in the same file
+        const scrollPos = (file && this.lastFilePath === file.path) ? container.scrollTop : 0;
+        this.lastFilePath = file?.path || null;
+
         container.empty();
         container.addClass('scripter-scene-view-container');
 
-        const file = this.app.workspace.getActiveFile();
         if (!file) {
             container.createEl('div', { text: 'No active file', cls: 'pane-empty' });
             return;
@@ -62,7 +70,7 @@ export class SceneView extends ItemView {
         const headings = cache?.headings || [];
 
         // Combine headings (H1-H3) and Scenes into a single sorted list
-        const items: { line: number, text: string, type: string, level?: number }[] = [];
+        const items: { line: number, text: string, type: string, level?: number, summary?: string }[] = [];
 
         // Add H1-H3
         headings.forEach(h => {
@@ -76,14 +84,34 @@ export class SceneView extends ItemView {
             }
         });
 
+        // Get settings - ensure 0 is respected
+        const settings = (this.app as any).plugins.getPlugin('script-editor')?.settings;
+        const summaryLength = settings !== undefined && settings.summaryLength !== undefined ? settings.summaryLength : 50;
+
         // Add Scenes
         lines.forEach((line, index) => {
             const trimmed = line.trim();
             if (SCENE_REGEX.test(trimmed)) {
+                // Find summary: look ahead for the next X characters of non-empty text
+                let summary = "";
+                let scanIdx = index + 1;
+                while (summary.length < summaryLength && scanIdx < lines.length) {
+                    const scanLine = lines[scanIdx].trim();
+                    if (scanLine && !SCENE_REGEX.test(scanLine) && !scanLine.startsWith('#')) {
+                        // Clean up script markers for summary
+                        const clean = scanLine.replace(/^[@.((（].+?[)）:]?|[:：]/g, '').trim();
+                        summary += (summary ? " " : "") + clean;
+                    }
+                    if (SCENE_REGEX.test(scanLine) || scanLine.startsWith('#')) break;
+                    scanIdx++;
+                }
+                if (summary.length > summaryLength) summary = summary.substring(0, summaryLength) + "...";
+
                 items.push({
                     line: index,
                     text: trimmed,
-                    type: 'scene'
+                    type: 'scene',
+                    summary: summary
                 });
             }
         });
@@ -92,17 +120,59 @@ export class SceneView extends ItemView {
         items.sort((a, b) => a.line - b.line);
 
         // Render items
+        let currentFoldLevel: number | null = null;
+
         items.forEach(item => {
+            // Check if we should skip this item due to a parent being folded
+            if (currentFoldLevel !== null) {
+                if (item.type === 'scene' || (item.level && item.level > currentFoldLevel)) {
+                    return; // Skip this item
+                } else {
+                    currentFoldLevel = null; // Reached a heading of same or higher level
+                }
+            }
+
             const itemEl = listEl.createDiv({
                 cls: `script-editor-scene-item script-editor-item-${item.type} ${item.level ? 'script-editor-item-h' + item.level : ''}`
             });
 
-            const linkEl = itemEl.createEl('a', {
+            // Add Folding Icon for H1 and H2
+            if (item.type === 'heading' && (item.level === 1 || item.level === 2)) {
+                const isFolded = this.foldedHeadings.has(item.line.toString());
+                const foldIcon = itemEl.createSpan({
+                    cls: `script-editor-fold-icon ${isFolded ? 'is-collapsed' : ''}`
+                });
+                foldIcon.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+
+                foldIcon.onClickEvent((e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (isFolded) {
+                        this.foldedHeadings.delete(item.line.toString());
+                    } else {
+                        this.foldedHeadings.add(item.line.toString());
+                    }
+                    this.updateView();
+                });
+
+                if (isFolded) currentFoldLevel = item.level;
+            }
+
+            const contentContainer = itemEl.createDiv({ cls: 'script-editor-scene-info' });
+
+            const linkEl = contentContainer.createEl('a', {
                 text: item.text,
                 cls: 'script-editor-scene-link'
             });
 
-            linkEl.onClickEvent((e) => {
+            if (item.type === 'scene' && (item as any).summary) {
+                contentContainer.createDiv({
+                    text: (item as any).summary,
+                    cls: 'script-editor-scene-summary'
+                });
+            }
+
+            itemEl.onClickEvent((e) => {
                 e.preventDefault();
                 this.navToLine(file, item.line);
             });
@@ -111,6 +181,9 @@ export class SceneView extends ItemView {
         if (items.length === 0) {
             listEl.createEl('div', { text: 'No headings or scenes found', cls: 'pane-empty' });
         }
+
+        // Restore scroll position
+        container.scrollTop = scrollPos;
     }
 
     private async navToLine(file: TFile, line: number) {
