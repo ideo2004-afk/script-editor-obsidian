@@ -19016,7 +19016,7 @@ var DocxExporter = class {
     let previousType = "ACTION";
     for (let lineText of lines) {
       const trimmed = lineText.trim();
-      if (!trimmed || COLOR_TAG_REGEX.test(trimmed)) {
+      if (!trimmed || COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
         if (!trimmed)
           paragraphs.push(new Paragraph({}));
         previousType = "ACTION";
