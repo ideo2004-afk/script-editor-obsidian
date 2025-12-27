@@ -19592,13 +19592,17 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     const block = blocks[blockIdx];
     const container = this.contentEl;
     let existingSummary = "";
+    let existingColorLine = "";
     let otherLines = [];
     const title = block.contentLines[0] || "";
     for (let i = 1; i < block.contentLines.length; i++) {
       const line = block.contentLines[i];
       const summaryMatch = line.match(SUMMARY_REGEX);
+      const colorMatch = line.match(COLOR_TAG_REGEX);
       if (summaryMatch) {
         existingSummary = summaryMatch[1];
+      } else if (colorMatch) {
+        existingColorLine = line;
       } else {
         otherLines.push(line);
       }
@@ -19630,6 +19634,9 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
       const finalLines = [titleInput.value];
       if (summaryInput.value.trim()) {
         finalLines.push(`[[summary: ${summaryInput.value.trim()}]]`);
+      }
+      if (existingColorLine) {
+        finalLines.push(existingColorLine);
       }
       finalLines.push(...textarea.value.split("\n"));
       block.contentLines = finalLines;

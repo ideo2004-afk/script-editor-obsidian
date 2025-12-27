@@ -436,8 +436,9 @@ export class StoryBoardView extends ItemView {
         const block = blocks[blockIdx];
         const container = this.contentEl;
 
-        // Extract existing summary vs content
+        // Extract existing summary vs color vs lines
         let existingSummary = "";
+        let existingColorLine = "";
         let otherLines: string[] = [];
         // First line is always title
         const title = block.contentLines[0] || '';
@@ -445,8 +446,11 @@ export class StoryBoardView extends ItemView {
         for (let i = 1; i < block.contentLines.length; i++) {
             const line = block.contentLines[i];
             const summaryMatch = line.match(SUMMARY_REGEX);
+            const colorMatch = line.match(COLOR_TAG_REGEX);
             if (summaryMatch) {
                 existingSummary = summaryMatch[1];
+            } else if (colorMatch) {
+                existingColorLine = line;
             } else {
                 otherLines.push(line);
             }
@@ -493,6 +497,10 @@ export class StoryBoardView extends ItemView {
             // Re-inject summary if not empty
             if (summaryInput.value.trim()) {
                 finalLines.push(`[[summary: ${summaryInput.value.trim()}]]`);
+            }
+            // Re-inject color if it existed
+            if (existingColorLine) {
+                finalLines.push(existingColorLine);
             }
             finalLines.push(...textarea.value.split('\n'));
 
