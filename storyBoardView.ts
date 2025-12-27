@@ -473,7 +473,7 @@ export class StoryBoardView extends ItemView {
         titleInput.focus();
 
         // Summary
-        body.createEl('div', { text: 'Summary / Beat (shown on Story Board)', cls: 'storyboard-modal-label' });
+        body.createEl('div', { text: 'Summary (shown on Story Board)', cls: 'storyboard-modal-label' });
         const summaryInput = body.createEl('textarea', {
             cls: 'storyboard-modal-summary-input',
             attr: { placeholder: 'Brief summary of what happens...' }

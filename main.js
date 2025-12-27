@@ -19615,7 +19615,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     });
     titleInput.value = title;
     titleInput.focus();
-    body.createEl("div", { text: "Summary / Beat (shown on Story Board)", cls: "storyboard-modal-label" });
+    body.createEl("div", { text: "Summary (shown on Story Board)", cls: "storyboard-modal-label" });
     const summaryInput = body.createEl("textarea", {
       cls: "storyboard-modal-summary-input",
       attr: { placeholder: "Brief summary of what happens..." }
