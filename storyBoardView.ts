@@ -66,7 +66,7 @@ export class StoryBoardView extends ItemView {
 
     async updateView() {
         const container = this.contentEl;
-        if (!container) return; // Guard
+        if (!container) return;
 
         const scrollPos = container.scrollTop;
         container.empty();
@@ -186,7 +186,7 @@ export class StoryBoardView extends ItemView {
                     if (!explicitSummary && sLine && !sLine.startsWith('#')) {
                         // Regular content fallback
                         if (summary.length < summaryLength) {
-                            const clean = sLine.replace(/^[@.((（].+?[)）:]?|[:：]|\[\[.*?\]\]/g, '').trim();
+                            const clean = sLine.replace(/^[@.((（].+?[)）:]?|[:：]|\[\[.*?\]\]|%%.*?%%/g, '').trim();
                             summary += (summary ? " " : "") + clean;
                         }
                     }
@@ -417,7 +417,7 @@ export class StoryBoardView extends ItemView {
         // Insert new color tag if not "none"
         if (color !== 'none') {
             // Insert after the scene heading (index 0)
-            block.contentLines.splice(1, 0, `[[color: ${color}]]`);
+            block.contentLines.splice(1, 0, `%%color: ${color}%%`);
         }
 
         // Reconstruct file content
@@ -496,7 +496,7 @@ export class StoryBoardView extends ItemView {
             const finalLines = [titleInput.value];
             // Re-inject summary if not empty
             if (summaryInput.value.trim()) {
-                finalLines.push(`[[summary: ${summaryInput.value.trim()}]]`);
+                finalLines.push(`%%summary: ${summaryInput.value.trim()}%%`);
             }
             // Re-inject color if it existed
             if (existingColorLine) {
@@ -671,7 +671,7 @@ ${after}`;
                 // Remove old summary tags
                 block.contentLines = block.contentLines.filter((l: string) => !SUMMARY_REGEX.test(l));
                 // Insert new summary tag after title
-                block.contentLines.splice(1, 0, `[[summary: ${cleanedText}]]`);
+                block.contentLines.splice(1, 0, `%%summary: ${cleanedText}%%`);
             } else {
                 // Parse generated scene
                 const titleMatch = aiText.match(/TITLE:\s*(.*)/i);
@@ -683,7 +683,7 @@ ${after}`;
                 const newContent = contentParts.length > 1 ? contentParts[1].trim() : "";
 
                 block.contentLines = [newTitle];
-                if (newSummary) block.contentLines.push(`[[summary: ${newSummary}]]`);
+                if (newSummary) block.contentLines.push(`%%summary: ${newSummary}%%`);
                 if (newContent) block.contentLines.push(...newContent.split('\n'));
             }
 
@@ -773,7 +773,7 @@ ${transcript}`;
                         // Clear existing summary tags if any (rare since we filtered for !b.summary)
                         blocks[idx].contentLines = blocks[idx].contentLines.filter((l: string) => !SUMMARY_REGEX.test(l));
                         // Insert new summary tag after title line
-                        blocks[idx].contentLines.splice(1, 0, `[[summary: ${summary}]]`);
+                        blocks[idx].contentLines.splice(1, 0, `%%summary: ${summary}%%`);
                         successCount++;
                     }
                 }

@@ -19411,7 +19411,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           }
           if (!explicitSummary && sLine && !sLine.startsWith("#")) {
             if (summary.length < summaryLength) {
-              const clean = sLine.replace(/^[@.((（].+?[)）:]?|[:：]|\[\[.*?\]\]/g, "").trim();
+              const clean = sLine.replace(/^[@.((（].+?[)）:]?|[:：]|\[\[.*?\]\]|%%.*?%%/g, "").trim();
               summary += (summary ? " " : "") + clean;
             }
           }
@@ -19577,7 +19577,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     const block = blocks[blockIdx];
     block.contentLines = block.contentLines.filter((l) => !COLOR_TAG_REGEX.test(l.trim()));
     if (color !== "none") {
-      block.contentLines.splice(1, 0, `[[color: ${color}]]`);
+      block.contentLines.splice(1, 0, `%%color: ${color}%%`);
     }
     const newContent = blocks.map((b) => b.contentLines.join("\n")).join("\n");
     if (this.file) {
@@ -19633,7 +19633,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     saveBtn.onclick = async () => {
       const finalLines = [titleInput.value];
       if (summaryInput.value.trim()) {
-        finalLines.push(`[[summary: ${summaryInput.value.trim()}]]`);
+        finalLines.push(`%%summary: ${summaryInput.value.trim()}%%`);
       }
       if (existingColorLine) {
         finalLines.push(existingColorLine);
@@ -19777,7 +19777,7 @@ ${after}`;
       if (hasContent) {
         const cleanedText = aiText.trim().replace(/^Summary:\s*/i, "");
         block.contentLines = block.contentLines.filter((l) => !SUMMARY_REGEX.test(l));
-        block.contentLines.splice(1, 0, `[[summary: ${cleanedText}]]`);
+        block.contentLines.splice(1, 0, `%%summary: ${cleanedText}%%`);
       } else {
         const titleMatch = aiText.match(/TITLE:\s*(.*)/i);
         const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
@@ -19787,7 +19787,7 @@ ${after}`;
         const newContent = contentParts.length > 1 ? contentParts[1].trim() : "";
         block.contentLines = [newTitle];
         if (newSummary)
-          block.contentLines.push(`[[summary: ${newSummary}]]`);
+          block.contentLines.push(`%%summary: ${newSummary}%%`);
         if (newContent)
           block.contentLines.push(...newContent.split("\n"));
       }
@@ -19861,7 +19861,7 @@ ${transcript}`;
           const summary = match[2].trim();
           if (blocks[idx] && blocks[idx].type === "scene") {
             blocks[idx].contentLines = blocks[idx].contentLines.filter((l) => !SUMMARY_REGEX.test(l));
-            blocks[idx].contentLines.splice(1, 0, `[[summary: ${summary}]]`);
+            blocks[idx].contentLines.splice(1, 0, `%%summary: ${summary}%%`);
             successCount++;
           }
         }
@@ -19894,8 +19894,8 @@ var TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
 var PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
 var OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
 var CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30})([:：])\s*(.*)$/;
-var COLOR_TAG_REGEX = /^\[\[color:\s*(red|blue|green|yellow|purple|none|无|無)\]\]$/i;
-var SUMMARY_REGEX = /^\[\[summary:\s*(.*)\]\]$/i;
+var COLOR_TAG_REGEX = /^%%color:\s*(red|blue|green|yellow|purple|none|无|無)%%$/i;
+var SUMMARY_REGEX = /^%%summary:\s*(.*)%%$/i;
 var CSS_CLASSES = {
   SCENE: "script-scene",
   CHARACTER: "script-character",
@@ -19986,36 +19986,43 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
       callback: () => this.activateView()
     });
     this.registerMarkdownPostProcessor((element, context) => {
-      const frontmatter = context.frontmatter;
-      const cssClasses = frontmatter == null ? void 0 : frontmatter.cssclasses;
-      const classesArray = Array.isArray(cssClasses) ? cssClasses : typeof cssClasses === "string" ? [cssClasses] : [];
+      const fm = context.frontmatter;
+      const cls = (fm == null ? void 0 : fm.cssclasses) || (fm == null ? void 0 : fm.cssclass) || [];
+      const classesArray = Array.isArray(cls) ? cls : typeof cls === "string" ? [cls] : [];
       if (!classesArray.includes("fountain") && !classesArray.includes("script")) {
         return;
       }
       const leaves = element.querySelectorAll("p, li");
-      leaves.forEach((leaf) => {
-        if (leaf.dataset.scriptProcessed)
+      leaves.forEach((node) => {
+        var _a;
+        if (node.dataset.scriptProcessed)
           return;
-        leaf.dataset.scriptProcessed = "true";
-        const text = leaf.innerText || "";
-        const trimmed = text.trim();
-        if (!trimmed || trimmed.startsWith("#") || COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
+        const text = ((_a = node.innerText) == null ? void 0 : _a.trim()) || "";
+        if (!text)
+          return;
+        if (COLOR_TAG_REGEX.test(text) || SUMMARY_REGEX.test(text)) {
+          node.style.display = "none";
+          node.dataset.scriptProcessed = "true";
           return;
         }
-        const format = this.detectExplicitFormat(trimmed);
+        if (text.startsWith("#"))
+          return;
+        const format = this.detectExplicitFormat(text);
         if (format) {
-          leaf.addClass(format.cssClass);
-          const colonMatch = trimmed.match(CHARACTER_COLON_REGEX);
+          node.dataset.scriptProcessed = "true";
+          node.addClass(format.cssClass);
+          const colonMatch = text.match(CHARACTER_COLON_REGEX);
           if (format.typeKey === "CHARACTER" && colonMatch) {
             const [_, charName, colon, dialogueText] = colonMatch;
             if (dialogueText.trim()) {
-              leaf.empty();
-              leaf.createSpan({ cls: "script-character", text: charName + colon });
-              leaf.createDiv({ cls: "script-dialogue", text: dialogueText.trim() });
+              node.empty();
+              node.createSpan({ cls: "script-character", text: charName + colon });
+              node.createDiv({ cls: "script-dialogue", text: dialogueText.trim() });
             }
           }
         } else {
-          leaf.addClass(CSS_CLASSES.ACTION);
+          node.dataset.scriptProcessed = "true";
+          node.addClass(CSS_CLASSES.ACTION);
         }
       });
     });
@@ -20473,8 +20480,8 @@ In **Story Board** mode, you can press **AI Beat Summary**, auto generate all sc
 FADE IN:
 
 EXT. scene 01
-[[summary:  summary of this scene.]]
-[[color: blue]]
+%%summary: summary of this scene.%%
+%%color: blue%%
 
 Here is Action description. Here is Action description. Here is Action description. 
 Here is Action description. 

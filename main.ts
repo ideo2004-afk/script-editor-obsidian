@@ -17,8 +17,8 @@ export const TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
 export const PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
 export const OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
 export const CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30})([:：])\s*(.*)$/;
-export const COLOR_TAG_REGEX = /^\[\[color:\s*(red|blue|green|yellow|purple|none|无|無)\]\]$/i;
-export const SUMMARY_REGEX = /^\[\[summary:\s*(.*)\]\]$/i;
+export const COLOR_TAG_REGEX = /^%%color:\s*(red|blue|green|yellow|purple|none|无|無)%%$/i;
+export const SUMMARY_REGEX = /^%%summary:\s*(.*)%%$/i;
 
 // CSS Classes (Reading Mode / PDF)
 const CSS_CLASSES = {
@@ -145,51 +145,48 @@ export default class ScriptEditorPlugin extends Plugin {
 
         // 3. Post Processor (Reading Mode & PDF)
         this.registerMarkdownPostProcessor((element, context) => {
-            const frontmatter = context.frontmatter;
-            const cssClasses = frontmatter?.cssclasses;
-            const classesArray = Array.isArray(cssClasses) ? cssClasses : (typeof cssClasses === 'string' ? [cssClasses] : []);
+            const fm = context.frontmatter;
+            const cls = fm?.cssclasses || fm?.cssclass || [];
+            const classesArray = Array.isArray(cls) ? cls : (typeof cls === 'string' ? [cls] : []);
 
             if (!classesArray.includes('fountain') && !classesArray.includes('script')) {
                 return;
             }
 
-            // 1. Target only simple leaf elements (p, li)
             const leaves = element.querySelectorAll('p, li');
+            leaves.forEach((node: HTMLElement) => {
+                if (node.dataset.scriptProcessed) return;
 
-            leaves.forEach((leaf: HTMLElement) => {
-                // 2. Prevent double-processing (idempotency)
-                if (leaf.dataset.scriptProcessed) return;
-                leaf.dataset.scriptProcessed = "true";
+                const text = node.innerText?.trim() || "";
+                if (!text) return;
 
-                const text = leaf.innerText || "";
-                const trimmed = text.trim();
-
-                // 3. Ignore standard Markdown headings or meta tags
-                if (!trimmed ||
-                    trimmed.startsWith('#') ||
-                    COLOR_TAG_REGEX.test(trimmed) ||
-                    SUMMARY_REGEX.test(trimmed)) {
+                // Obsidian naturally hides %% tags in Reading Mode, 
+                // but we check them here to ensure we don't style them as 'Action'
+                if (COLOR_TAG_REGEX.test(text) || SUMMARY_REGEX.test(text)) {
+                    node.style.display = 'none';
+                    node.dataset.scriptProcessed = "true";
                     return;
                 }
 
-                const format = this.detectExplicitFormat(trimmed);
+                if (text.startsWith('#')) return;
 
-                // 4. Apply classes based on script syntax
+                const format = this.detectExplicitFormat(text);
                 if (format) {
-                    leaf.addClass(format.cssClass);
-                    // For characters with colon dialogue on same line
-                    const colonMatch = trimmed.match(CHARACTER_COLON_REGEX);
+                    node.dataset.scriptProcessed = "true";
+                    node.addClass(format.cssClass);
+
+                    const colonMatch = text.match(CHARACTER_COLON_REGEX);
                     if (format.typeKey === 'CHARACTER' && colonMatch) {
                         const [_, charName, colon, dialogueText] = colonMatch;
                         if (dialogueText.trim()) {
-                            leaf.empty();
-                            leaf.createSpan({ cls: 'script-character', text: charName + colon });
-                            leaf.createDiv({ cls: 'script-dialogue', text: dialogueText.trim() });
+                            node.empty();
+                            node.createSpan({ cls: 'script-character', text: charName + colon });
+                            node.createDiv({ cls: 'script-dialogue', text: dialogueText.trim() });
                         }
                     }
                 } else {
-                    // Logic for Action lines (most text)
-                    leaf.addClass(CSS_CLASSES.ACTION);
+                    node.dataset.scriptProcessed = "true";
+                    node.addClass(CSS_CLASSES.ACTION);
                 }
             });
         });
@@ -741,8 +738,8 @@ In **Story Board** mode, you can press **AI Beat Summary**, auto generate all sc
 FADE IN:
 
 EXT. scene 01
-[[summary:  summary of this scene.]]
-[[color: blue]]
+%%summary: summary of this scene.%%
+%%color: blue%%
 
 Here is Action description. Here is Action description. Here is Action description. 
 Here is Action description. 
