@@ -94,6 +94,13 @@
         letter-spacing: -1ch;
     }
 
+    /* Show markers in Source Mode */
+    .markdown-source-view.mod-cm6:not(.is-live-preview) & .lp-marker-symbol {
+        color: var(--text-muted) !important;
+        font-size: inherit !important;
+        letter-spacing: normal !important;
+    }
+
     /* H1 Title Centering */
     & h1,
     & .HyperMD-header-1 {
@@ -224,6 +231,7 @@
 }
 
 .storyboard-header {
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -231,6 +239,32 @@
     border-bottom: 1px solid var(--background-modifier-border);
     padding-bottom: 15px;
     text-align: center;
+    min-height: 50px;
+}
+
+.storyboard-header h2 {
+    margin: 0;
+}
+
+.storyboard-bulk-ai-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    /* 移除強制背景色，交給 mod-cta 處理 */
+    padding: 4px 14px;
+    font-size: var(--font-ui-small);
+    font-weight: 500;
+}
+
+.storyboard-bulk-ai-icon svg {
+    width: 14px;
+    height: 14px;
+    color: inherit;
+    display: block;
 }
 
 .storyboard-grid {
@@ -634,6 +668,35 @@
     border-bottom-color: var(--text-muted);
 }
 
+.storyboard-modal-label {
+    font-size: 0.75em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-accent);
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.storyboard-modal-summary-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    font-family: var(--font-monospace);
+    font-size: 0.95em;
+    border: none;
+    background-color: var(--background-primary-alt);
+    border-radius: 8px;
+    color: var(--text-normal);
+    resize: none;
+    margin-bottom: 5px;
+}
+
+.storyboard-modal-summary-input:focus {
+    outline: none;
+    background-color: var(--background-secondary);
+}
+
 .storyboard-modal-textarea {
     flex: 1;
     padding: 12px;
@@ -642,12 +705,14 @@
     border: none;
     color: var(--text-normal);
     resize: none;
-    min-height: 250px;
+    min-height: 150px;
     border-radius: 8px;
+    background-color: var(--background-primary-alt);
 }
 
 .storyboard-modal-textarea:focus {
     outline: none;
+    background-color: var(--background-secondary);
 }
 
 .storyboard-modal-footer {

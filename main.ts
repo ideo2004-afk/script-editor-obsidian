@@ -1,4 +1,4 @@
-import { Plugin, MarkdownView, Editor, Menu, App, PluginSettingTab, Setting, MenuItem, TFile, TFolder, Notice, WorkspaceLeaf } from 'obsidian';
+import { Plugin, MarkdownView, Editor, Menu, App, PluginSettingTab, Setting, MenuItem, TFile, TFolder, Notice, WorkspaceLeaf, editorLivePreviewField } from 'obsidian';
 import { DocxExporter } from './docxExporter';
 import { RangeSetBuilder } from '@codemirror/state';
 import { Decoration, DecorationSet, EditorView, ViewPlugin, ViewUpdate } from '@codemirror/view';
@@ -18,6 +18,7 @@ export const PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
 export const OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
 export const CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30})([:：])\s*(.*)$/;
 export const COLOR_TAG_REGEX = /^\[\[color:\s*(red|blue|green|yellow|purple|none|无|無)\]\]$/i;
+export const SUMMARY_REGEX = /^\[\[summary:\s*(.*)\]\]$/i;
 
 // CSS Classes (Reading Mode / PDF)
 const CSS_CLASSES = {
@@ -48,12 +49,12 @@ interface ScriptFormat {
 
 interface ScriptEditorSettings {
     mySetting: string;
-    summaryLength: number;
+    geminiApiKey: string;
 }
 
 const DEFAULT_SETTINGS: ScriptEditorSettings = {
     mySetting: 'default',
-    summaryLength: 50
+    geminiApiKey: ''
 }
 
 interface ExtendedMenuItem extends MenuItem {
@@ -152,67 +153,44 @@ export default class ScriptEditorPlugin extends Plugin {
                 return;
             }
 
-            const elements = element.querySelectorAll('p, li');
-            let globalPreviousType = 'ACTION';
+            // 1. Target only simple leaf elements (p, li)
+            const leaves = element.querySelectorAll('p, li');
 
-            elements.forEach((el) => {
-                const sectionInfo = context.getSectionInfo(el as HTMLElement);
-                let sourceLines: string[] = [];
+            leaves.forEach((leaf: HTMLElement) => {
+                // 2. Prevent double-processing (idempotency)
+                if (leaf.dataset.scriptProcessed) return;
+                leaf.dataset.scriptProcessed = "true";
 
-                if (sectionInfo) {
-                    const { text: fullSource, lineStart, lineEnd } = sectionInfo;
-                    sourceLines = fullSource.split('\n').slice(lineStart, lineEnd + 1);
-                } else {
-                    // Fallback for when sectionInfo is null (common in Reading Mode/PDF)
-                    // Use innerText as HTMLElement to preserve line breaks from <br>
-                    sourceLines = ((el as HTMLElement).innerText || "").split('\n');
+                const text = leaf.innerText || "";
+                const trimmed = text.trim();
+
+                // 3. Ignore standard Markdown headings or meta tags
+                if (!trimmed ||
+                    trimmed.startsWith('#') ||
+                    COLOR_TAG_REGEX.test(trimmed) ||
+                    SUMMARY_REGEX.test(trimmed)) {
+                    return;
                 }
 
-                // Revert to internal div strategy which was confirmed perfect for Reading Mode
-                el.empty();
+                const format = this.detectExplicitFormat(trimmed);
 
-                sourceLines.forEach((lineText: string) => {
-                    const trimmedLine = lineText.trim();
-                    if (!trimmedLine || COLOR_TAG_REGEX.test(trimmedLine)) {
-                        globalPreviousType = 'ACTION';
-                        return;
-                    }
-
-                    const format = this.detectExplicitFormat(trimmedLine);
-                    const container = (el as HTMLElement).createDiv();
-
-                    if (format) {
-                        container.addClass(format.cssClass);
-                        let displayText = trimmedLine;
-                        if (format.removePrefix) {
-                            displayText = trimmedLine.substring(format.markerLength).trim();
+                // 4. Apply classes based on script syntax
+                if (format) {
+                    leaf.addClass(format.cssClass);
+                    // For characters with colon dialogue on same line
+                    const colonMatch = trimmed.match(CHARACTER_COLON_REGEX);
+                    if (format.typeKey === 'CHARACTER' && colonMatch) {
+                        const [_, charName, colon, dialogueText] = colonMatch;
+                        if (dialogueText.trim()) {
+                            leaf.empty();
+                            leaf.createSpan({ cls: 'script-character', text: charName + colon });
+                            leaf.createDiv({ cls: 'script-dialogue', text: dialogueText.trim() });
                         }
-
-                        const colonMatch = displayText.match(CHARACTER_COLON_REGEX);
-                        if (format.typeKey === 'CHARACTER' && colonMatch) {
-                            const [_, charName, colon, dialogueText] = colonMatch;
-                            container.setText(charName + colon);
-                            if (dialogueText.trim()) {
-                                const diagDiv = el.createDiv(CSS_CLASSES.DIALOGUE);
-                                diagDiv.setText(dialogueText.trim());
-                                globalPreviousType = 'DIALOGUE';
-                            } else {
-                                globalPreviousType = 'CHARACTER';
-                            }
-                        } else {
-                            container.setText(displayText);
-                            globalPreviousType = format.typeKey;
-                        }
-                    } else if (globalPreviousType === 'CHARACTER' || globalPreviousType === 'PARENTHETICAL' || globalPreviousType === 'DIALOGUE') {
-                        container.addClass(CSS_CLASSES.DIALOGUE);
-                        container.setText(trimmedLine);
-                        globalPreviousType = 'DIALOGUE';
-                    } else {
-                        container.addClass(CSS_CLASSES.ACTION);
-                        container.setText(trimmedLine);
-                        globalPreviousType = 'ACTION';
                     }
-                });
+                } else {
+                    // Logic for Action lines (most text)
+                    leaf.addClass(CSS_CLASSES.ACTION);
+                }
             });
         });
 
@@ -475,6 +453,9 @@ export default class ScriptEditorPlugin extends Plugin {
                 const isScript = view.dom.closest('.fountain') || view.dom.closest('.script');
                 if (!isScript) return builder.finish();
 
+                // @ts-ignore
+                const isLivePreview = view.state.field(editorLivePreviewField);
+
                 const selection = view.state.selection;
                 let previousType: string | null = null;
                 const hiddenDeco = Decoration.mark({ class: LP_CLASSES.SYMBOL });
@@ -500,9 +481,9 @@ export default class ScriptEditorPlugin extends Plugin {
                         if (!trimmed) { // Empty lines
                             currentType = 'EMPTY';
                         }
-                        else if (COLOR_TAG_REGEX.test(trimmed)) { // Color tags
-                            if (!isCursorOnLine) {
-                                lpClass = LP_CLASSES.SYMBOL; // This will trigger display: none via our CSS
+                        else if (COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) { // Tags
+                            if (isLivePreview && !isCursorOnLine) {
+                                lpClass = LP_CLASSES.SYMBOL; // This will trigger hiding via our CSS
                                 shouldHideMarker = true;
                             }
                             currentType = 'EMPTY';
@@ -510,7 +491,7 @@ export default class ScriptEditorPlugin extends Plugin {
                         else if (SCENE_REGEX.test(text)) {
                             lpClass = LP_CLASSES.SCENE;
                             currentType = 'SCENE';
-                            if (!isCursorOnLine && text.startsWith('.')) {
+                            if (isLivePreview && !isCursorOnLine && text.startsWith('.')) {
                                 shouldHideMarker = true;
                             }
                         }
@@ -532,7 +513,7 @@ export default class ScriptEditorPlugin extends Plugin {
                             if (format && format.typeKey === 'CHARACTER') {
                                 lpClass = LP_CLASSES.CHARACTER;
                                 currentType = 'CHARACTER';
-                                if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+                                if (isLivePreview && !isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
                                     shouldHideMarker = true;
                                 }
                             } else if (previousType === 'CHARACTER' || previousType === 'PARENTHETICAL' || previousType === 'DIALOGUE') {
@@ -543,13 +524,13 @@ export default class ScriptEditorPlugin extends Plugin {
                             }
                         }
 
-                        if (lpClass) {
+                        if (isLivePreview && lpClass) {
                             builder.add(line.from, line.from, Decoration.line({
                                 attributes: { class: lpClass }
                             }));
                         }
 
-                        if (shouldHideMarker) {
+                        if (isLivePreview && shouldHideMarker) {
                             builder.add(line.from, line.from + 1, hiddenDeco);
                         }
 
@@ -731,8 +712,66 @@ export default class ScriptEditorPlugin extends Plugin {
             counter++;
         }
 
-        const frontmatterContent = "---\ncssclasses: fountain\n---\n\n";
-        const newFile = await this.app.vault.create(filePath, frontmatterContent);
+        let fileContent = `---
+cssclasses:
+- script
+---
+
+
+# YOUR TITLE HERE
+
+Author: Your Name.
+Genre: Monster in the House/Out of the Bottle/Superhero/etc.
+
+**Screenplay syntax**: Basic rules for Fountain-compatible formatting.
+- Scene Heading: 'INT. / EXT.' will automatic bold & uppercase.
+- Character: '@NAME' \\ 'NAME' \\ 'NAME:', will centered. "@" is hidden in preview.'
+- Dialogue: Text below Character, will automatically indented.
+- Parenthetical: '(emotion) / OS: / VO:', will automatic centered & italic.
+- Transition: 'CUT TO: / FADE IN', will right aligned.
+
+To see the Script as a Story Board, choose **Open Story Board**.
+
+In **Story Board** mode, you can press **AI Beat Summary**, auto generate all scene's summary or drag the cards of Story board.
+
+---
+
+## Act One
+
+FADE IN:
+
+EXT. scene 01
+[[summary:  summary of this scene.]]
+[[color: blue]]
+
+Here is Action description. Here is Action description. Here is Action description. 
+Here is Action description. 
+
+BOB:
+It is too hard. I will never make
+
+MARY:
+You can make it.
+
+CUT TO:
+
+INT. scene 02
+
+Here is Action description. Here is Action description. 
+
+BOB:
+It is too hard. I will never make
+
+MARY:
+You can make it.
+`;
+
+        const templateFile = this.app.vault.getAbstractFileByPath('Script Templet.md');
+        if (templateFile instanceof TFile) {
+            fileContent = await this.app.vault.read(templateFile);
+        }
+
+        const newFile = await this.app.vault.create(filePath, fileContent);
 
         const leaf = this.app.workspace.getLeaf(false);
         await leaf.openFile(newFile);
@@ -768,19 +807,16 @@ class ScriptEditorSettingTab extends PluginSettingTab {
             .setHeading();
 
         new Setting(containerEl)
-            .setName('Story Board summary length')
-            .setDesc('Number of characters to show as a preview for each scene in the Story Board cards.')
+            .setName('AI Beat summary (Gemini 2.5 Flash)')
+            .setDesc('Enable AI-powered scene summarization and generation. Get your free API key from Google AI Studio.')
             .addText(text => text
-                .setPlaceholder('50')
-                .setValue(this.plugin.settings.summaryLength.toString())
+                .setPlaceholder('Enter your Gemini API key')
+                .setValue(this.plugin.settings.geminiApiKey)
                 .onChange(async (value) => {
-                    const num = parseInt(value);
-                    if (!isNaN(num) && num >= 0) {
-                        this.plugin.settings.summaryLength = num;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshStoryBoard(true);
-                    }
-                }));
+                    this.plugin.settings.geminiApiKey = value.trim();
+                    await this.plugin.saveSettings();
+                })
+                .inputEl.style.width = '350px');
 
         // 1. Basic Setup
         new Setting(containerEl)
@@ -802,10 +838,11 @@ class ScriptEditorSettingTab extends PluginSettingTab {
             .setHeading();
 
         const featuresDiv = containerEl.createDiv();
+        featuresDiv.createEl('li', { text: '✨ Story Board Mode: Activate the grid icon in the right sidebar for a holistic view of your script structure.' });
+        featuresDiv.createEl('li', { text: '✨ AI Beat Summary: Instantly generate or update scene summaries using Gemini AI, either one-by-one or for the entire script.' });
         featuresDiv.createEl('li', { text: 'New Script Button: Click the quill/scroll icon in the left ribbon to create a new screenplay.' });
-        featuresDiv.createEl('li', { text: 'Scene Mode: Find the list icon in the right sidebar (next to the Outline) to view your scene structure.' });
         featuresDiv.createEl('li', { text: 'Renumber Scenes: Right-click in the editor to re-order your scene numbers automatically.' });
-        featuresDiv.createEl('li', { text: 'Professional Export: Right-click and choose "Export to .docx" to generate a Hollywood-standard Word document.' });
+        featuresDiv.createEl('li', { text: 'Professional Export: Right-click and choose "Export to .docx" for Hollywood-standard output.' });
 
         containerEl.createEl('br');
 

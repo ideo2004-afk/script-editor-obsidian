@@ -29,6 +29,7 @@ __export(main_exports, {
   OS_DIALOGUE_REGEX: () => OS_DIALOGUE_REGEX,
   PARENTHETICAL_REGEX: () => PARENTHETICAL_REGEX,
   SCENE_REGEX: () => SCENE_REGEX,
+  SUMMARY_REGEX: () => SUMMARY_REGEX,
   TRANSITION_REGEX: () => TRANSITION_REGEX,
   default: () => ScriptEditorPlugin
 });
@@ -19319,7 +19320,6 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     });
   }
   async updateView() {
-    var _a, _b;
     const container = this.contentEl;
     if (!container)
       return;
@@ -19339,8 +19339,15 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     }
     const headerEl = container.createDiv({ cls: "storyboard-header" });
     headerEl.createEl("h2", { text: displayTitle });
-    const settings = (_a = this.app.plugins.getPlugin("script-editor")) == null ? void 0 : _a.settings;
-    const summaryLength = (_b = settings == null ? void 0 : settings.summaryLength) != null ? _b : 50;
+    const bulkBtn = headerEl.createEl("button", {
+      cls: "storyboard-bulk-ai-btn mod-cta"
+    });
+    (0, import_obsidian2.setTooltip)(bulkBtn, "Analyze script and generate summaries for all scenes missing them.");
+    const bulkBtnText = bulkBtn.createSpan({ text: "AI Beat Summary " });
+    const bulkBtnIcon = bulkBtn.createSpan({ cls: "storyboard-bulk-ai-icon" });
+    (0, import_obsidian2.setIcon)(bulkBtnIcon, "sparkles");
+    bulkBtn.onclick = () => this.runBulkAIBeat(blocks);
+    const summaryLength = 50;
     const blocks = [];
     let currentBlock = {
       id: Math.random().toString(36).substr(2, 9),
@@ -19386,6 +19393,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
         }
         let summary = "";
         let cardColor = "none";
+        let explicitSummary = "";
         for (let i = 1; i < block.contentLines.length; i++) {
           const sLine = block.contentLines[i].trim();
           const colorMatch = sLine.match(COLOR_TAG_REGEX);
@@ -19395,15 +19403,23 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
               cardColor = "none";
             continue;
           }
-          if (sLine && !sLine.startsWith("#")) {
-            const clean = sLine.replace(/^[@.((（].+?[)）:]?|[:：]|\[\[.*?\]\]/g, "").trim();
-            summary += (summary ? " " : "") + clean;
+          const summaryMatch = sLine.match(SUMMARY_REGEX);
+          if (summaryMatch) {
+            explicitSummary = summaryMatch[1];
+            block.summary = explicitSummary;
+            continue;
           }
-          if (summary.length >= summaryLength)
-            break;
+          if (!explicitSummary && sLine && !sLine.startsWith("#")) {
+            if (summary.length < summaryLength) {
+              const clean = sLine.replace(/^[@.((（].+?[)）:]?|[:：]|\[\[.*?\]\]/g, "").trim();
+              summary += (summary ? " " : "") + clean;
+            }
+          }
         }
-        if (summary.length > summaryLength)
+        if (!explicitSummary && summary.length > summaryLength) {
           summary = summary.substring(0, summaryLength) + "...";
+        }
+        const finalDisplaySummary = explicitSummary || summary;
         const cardEl = currentGrid.createDiv({ cls: `storyboard-card storyboard-card-color-${cardColor}` });
         cardEl.setAttribute("draggable", "true");
         const dotEl = cardEl.createDiv({ cls: "storyboard-card-color-dot" });
@@ -19436,12 +19452,12 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           document.addEventListener("mousedown", closeHandler);
         });
         cardEl.createDiv({ text: block.title, cls: "storyboard-card-title" });
-        if (summary) {
-          cardEl.createDiv({ text: summary, cls: "storyboard-card-summary" });
+        if (finalDisplaySummary) {
+          cardEl.createDiv({ text: finalDisplaySummary, cls: "storyboard-card-summary" });
         }
         cardEl.addEventListener("dragstart", (e) => {
-          var _a2;
-          (_a2 = e.dataTransfer) == null ? void 0 : _a2.setData("text/plain", blockIdx.toString());
+          var _a;
+          (_a = e.dataTransfer) == null ? void 0 : _a.setData("text/plain", blockIdx.toString());
           cardEl.addClass("is-dragging");
         });
         cardEl.addEventListener("dragend", () => {
@@ -19466,9 +19482,9 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           cardEl.removeClass("drag-over-left", "drag-over-right");
         });
         cardEl.addEventListener("drop", async (e) => {
-          var _a2;
+          var _a;
           e.preventDefault();
-          const fromIdx = parseInt(((_a2 = e.dataTransfer) == null ? void 0 : _a2.getData("text/plain")) || "-1");
+          const fromIdx = parseInt(((_a = e.dataTransfer) == null ? void 0 : _a.getData("text/plain")) || "-1");
           const rect = cardEl.getBoundingClientRect();
           const midX = rect.left + rect.width / 2;
           const dropOnRight = e.clientX > midX;
@@ -19493,6 +19509,9 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           e.preventDefault();
           e.stopPropagation();
           const menu = new import_obsidian2.Menu();
+          menu.addItem((item) => {
+            item.setTitle("AI Beat").setIcon("sparkles").onClick(() => this.runAIBeat(blocks, blockIdx));
+          });
           menu.addItem((item) => {
             item.setTitle("Edit Scene").setIcon("pencil").onClick(() => this.openEditModal(blocks, blockIdx));
           });
@@ -19572,23 +19591,48 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
   openEditModal(blocks, blockIdx) {
     const block = blocks[blockIdx];
     const container = this.contentEl;
+    let existingSummary = "";
+    let otherLines = [];
+    const title = block.contentLines[0] || "";
+    for (let i = 1; i < block.contentLines.length; i++) {
+      const line = block.contentLines[i];
+      const summaryMatch = line.match(SUMMARY_REGEX);
+      if (summaryMatch) {
+        existingSummary = summaryMatch[1];
+      } else {
+        otherLines.push(line);
+      }
+    }
     const overlay = container.createDiv({ cls: "storyboard-modal-overlay" });
     const modal = overlay.createDiv({ cls: "storyboard-edit-modal" });
     const header = modal.createDiv({ cls: "storyboard-modal-header" });
     header.createEl("h3", { text: "Edit Scene" });
     const body = modal.createDiv({ cls: "storyboard-modal-body" });
+    body.createEl("div", { text: "Scene Heading", cls: "storyboard-modal-label" });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "Scene Heading (e.g. INT. LOCATION - DAY)" }
+      attr: { type: "text", placeholder: "e.g. INT. KITCHEN - DAY" }
     });
-    titleInput.value = block.contentLines[0] || "";
+    titleInput.value = title;
     titleInput.focus();
+    body.createEl("div", { text: "Summary / Beat (shown on Story Board)", cls: "storyboard-modal-label" });
+    const summaryInput = body.createEl("textarea", {
+      cls: "storyboard-modal-summary-input",
+      attr: { placeholder: "Brief summary of what happens..." }
+    });
+    summaryInput.value = existingSummary;
+    body.createEl("div", { text: "Script Content", cls: "storyboard-modal-label" });
     const textarea = body.createEl("textarea", { cls: "storyboard-modal-textarea" });
-    textarea.value = block.contentLines.slice(1).join("\n");
+    textarea.value = otherLines.join("\n");
     const footer = modal.createDiv({ cls: "storyboard-modal-footer" });
     const saveBtn = footer.createEl("button", { text: "Save", cls: "mod-cta" });
     saveBtn.onclick = async () => {
-      block.contentLines = [titleInput.value, ...textarea.value.split("\n")];
+      const finalLines = [titleInput.value];
+      if (summaryInput.value.trim()) {
+        finalLines.push(`[[summary: ${summaryInput.value.trim()}]]`);
+      }
+      finalLines.push(...textarea.value.split("\n"));
+      block.contentLines = finalLines;
       const newContent = blocks.map((b) => b.contentLines.join("\n")).join("\n");
       if (this.file) {
         await this.app.vault.modify(this.file, newContent);
@@ -19662,6 +19706,175 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
         overlay.remove();
     });
   }
+  async runAIBeat(blocks, blockIdx) {
+    var _a, _b, _c, _d, _e, _f;
+    const settings = (_a = this.app.plugins.getPlugin("script-editor")) == null ? void 0 : _a.settings;
+    const apiKey = settings == null ? void 0 : settings.geminiApiKey;
+    if (!apiKey) {
+      new import_obsidian2.Notice("Please set your Gemini API Key in settings first.");
+      return;
+    }
+    const block = blocks[blockIdx];
+    const content = block.contentLines.slice(1).join("\n").trim();
+    const hasContent = content.length > 20;
+    new import_obsidian2.Notice(hasContent ? "Generating AI summary..." : "Generating new scene from context...");
+    let prompt = "";
+    if (hasContent) {
+      prompt = `Act as a professional Hollywood screenwriter and script doctor. 
+Sumarize the following scene content into a concise BEAT.
+Requirements:
+1. Provide exactly ONE concise sentence summarising the scene.
+2. The summary MUST be in the same language and script (e.g., Traditional Chinese, English, Japanese) as the provided Scene Content.
+3. Do not include any other text, intros, or explanations.
+Format: [Summary]
+
+Scene Content:
+${content}`;
+    } else {
+      const before = blocks.slice(Math.max(0, blockIdx - 5), blockIdx).map((b) => b.contentLines.join("\n")).join("\n---\n");
+      const after = blocks.slice(blockIdx + 1, Math.min(blocks.length, blockIdx + 6)).map((b) => b.contentLines.join("\n")).join("\n---\n");
+      prompt = `Act as a professional Hollywood screenwriter.
+Based on the surrounding scenes (Context Before and After), generate a LOGICAL and EVOCATIVE new scene to fill this gap.
+Requirements:
+1. Provide a Scene Heading.
+2. Provide a concise ONE-sentence summary of the new scene.
+3. Provide initial script content (Action/Dialogue) in standard screenplay format.
+4. ALL content (Heading, Summary, Script) MUST be in the same language and script as the provided Context (e.g. if the context is Traditional Chinese, respond in Traditional Chinese).
+
+Format your response as:
+TITLE: [Heading]
+SUMMARY: [Summary]
+CONTENT:
+[Initial Script lines]
+
+Context Before:
+${before}
+
+Context After:
+${after}`;
+    }
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const response = await (0, import_obsidian2.requestUrl)({
+        url,
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+      const data = response.json;
+      const aiText = ((_f = (_e = (_d = (_c = (_b = data.candidates) == null ? void 0 : _b[0]) == null ? void 0 : _c.content) == null ? void 0 : _d.parts) == null ? void 0 : _e[0]) == null ? void 0 : _f.text) || "";
+      if (!aiText)
+        throw new Error("Empty response from AI");
+      if (hasContent) {
+        const cleanedText = aiText.trim().replace(/^Summary:\s*/i, "");
+        block.contentLines = block.contentLines.filter((l) => !SUMMARY_REGEX.test(l));
+        block.contentLines.splice(1, 0, `[[summary: ${cleanedText}]]`);
+      } else {
+        const titleMatch = aiText.match(/TITLE:\s*(.*)/i);
+        const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
+        const contentParts = aiText.split(/CONTENT:\s*/i);
+        const newTitle = titleMatch ? titleMatch[1].trim() : block.contentLines[0] || "INT. NEW SCENE - DAY";
+        const newSummary = summaryMatch ? summaryMatch[1].trim() : "";
+        const newContent = contentParts.length > 1 ? contentParts[1].trim() : "";
+        block.contentLines = [newTitle];
+        if (newSummary)
+          block.contentLines.push(`[[summary: ${newSummary}]]`);
+        if (newContent)
+          block.contentLines.push(...newContent.split("\n"));
+      }
+      const fullContent = blocks.map((b) => b.contentLines.join("\n")).join("\n");
+      if (this.file) {
+        await this.app.vault.modify(this.file, fullContent);
+        this.updateView();
+        new import_obsidian2.Notice("AI Beat Generated!");
+      }
+    } catch (error) {
+      console.error("Gemini AI Error:", error);
+      new import_obsidian2.Notice("AI Generation failed. Check Console for details.");
+    }
+  }
+  async runBulkAIBeat(blocks) {
+    var _a, _b, _c, _d, _e, _f;
+    const settings = (_a = this.app.plugins.getPlugin("script-editor")) == null ? void 0 : _a.settings;
+    const apiKey = settings == null ? void 0 : settings.geminiApiKey;
+    if (!apiKey) {
+      new import_obsidian2.Notice("Please set your Gemini API Key in settings first.");
+      return;
+    }
+    const scenesToProcess = blocks.slice(1).filter((b) => b.type === "scene" && !b.summary);
+    if (scenesToProcess.length === 0) {
+      new import_obsidian2.Notice("All scenes already have summaries!");
+      return;
+    }
+    new import_obsidian2.Notice(`\u{1F916} AI is analyzing ${scenesToProcess.length} scenes. Please wait...`);
+    const transcript = blocks.map((b, idx) => {
+      let text = `[BLOCK ${idx}] ${b.title}
+${b.contentLines.slice(1).join("\n")}`;
+      if (b.type === "scene" && !b.summary) {
+        text += `
+(REQUEST_SUMMARY_FOR_THIS_BLOCK)`;
+      }
+      return text;
+    }).join("\n\n---\n\n");
+    const prompt = `Act as a professional Hollywood screenwriter. 
+Below is a structured screenplay. 
+Some blocks are marked with (REQUEST_SUMMARY_FOR_THIS_BLOCK). 
+Please generate a concise ONE-sentence summary for each of those marked blocks.
+
+Requirements:
+1. Provide exactly ONE concise sentence per marked block.
+2. The summary MUST be in the same language and script (e.g., Traditional Chinese, English) as the block's content.
+3. Respond ONLY with a list of summaries in the following format:
+BLOCK X: [Summary]
+
+Screenplay:
+${transcript}`;
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const response = await (0, import_obsidian2.requestUrl)({
+        url,
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+      const data = response.json;
+      const aiText = ((_f = (_e = (_d = (_c = (_b = data.candidates) == null ? void 0 : _b[0]) == null ? void 0 : _c.content) == null ? void 0 : _d.parts) == null ? void 0 : _e[0]) == null ? void 0 : _f.text) || "";
+      if (!aiText)
+        throw new Error("Empty response from AI");
+      const lines = aiText.split("\n");
+      let successCount = 0;
+      lines.forEach((line) => {
+        const match = line.match(/BLOCK\s+(\d+):\s*(.*)/i);
+        if (match) {
+          const idx = parseInt(match[1]);
+          const summary = match[2].trim();
+          if (blocks[idx] && blocks[idx].type === "scene") {
+            blocks[idx].contentLines = blocks[idx].contentLines.filter((l) => !SUMMARY_REGEX.test(l));
+            blocks[idx].contentLines.splice(1, 0, `[[summary: ${summary}]]`);
+            successCount++;
+          }
+        }
+      });
+      if (successCount > 0) {
+        const finalFullContent = blocks.map((b) => b.contentLines.join("\n")).join("\n");
+        if (this.file) {
+          await this.app.vault.modify(this.file, finalFullContent);
+          this.updateView();
+          new import_obsidian2.Notice(`\u2728 Batch Complete! Generated ${successCount} summaries.`);
+        }
+      } else {
+        new import_obsidian2.Notice("AI process finished but no summaries could be parsed. Check developer console.");
+        console.log("AI Response was:", aiText);
+      }
+    } catch (error) {
+      console.error("Gemini Bulk Error:", error);
+      new import_obsidian2.Notice("Batch AI failed. See console.");
+    }
+  }
 };
 
 // main.ts
@@ -19675,6 +19888,7 @@ var PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
 var OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
 var CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30})([:：])\s*(.*)$/;
 var COLOR_TAG_REGEX = /^\[\[color:\s*(red|blue|green|yellow|purple|none|无|無)\]\]$/i;
+var SUMMARY_REGEX = /^\[\[summary:\s*(.*)\]\]$/i;
 var CSS_CLASSES = {
   SCENE: "script-scene",
   CHARACTER: "script-character",
@@ -19693,7 +19907,7 @@ var LP_CLASSES = {
 };
 var DEFAULT_SETTINGS = {
   mySetting: "default",
-  summaryLength: 50
+  geminiApiKey: ""
 };
 var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
   constructor() {
@@ -19771,57 +19985,31 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
       if (!classesArray.includes("fountain") && !classesArray.includes("script")) {
         return;
       }
-      const elements = element.querySelectorAll("p, li");
-      let globalPreviousType = "ACTION";
-      elements.forEach((el) => {
-        const sectionInfo = context.getSectionInfo(el);
-        let sourceLines = [];
-        if (sectionInfo) {
-          const { text: fullSource, lineStart, lineEnd } = sectionInfo;
-          sourceLines = fullSource.split("\n").slice(lineStart, lineEnd + 1);
-        } else {
-          sourceLines = (el.innerText || "").split("\n");
+      const leaves = element.querySelectorAll("p, li");
+      leaves.forEach((leaf) => {
+        if (leaf.dataset.scriptProcessed)
+          return;
+        leaf.dataset.scriptProcessed = "true";
+        const text = leaf.innerText || "";
+        const trimmed = text.trim();
+        if (!trimmed || trimmed.startsWith("#") || COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
+          return;
         }
-        el.empty();
-        sourceLines.forEach((lineText) => {
-          const trimmedLine = lineText.trim();
-          if (!trimmedLine || COLOR_TAG_REGEX.test(trimmedLine)) {
-            globalPreviousType = "ACTION";
-            return;
-          }
-          const format = this.detectExplicitFormat(trimmedLine);
-          const container = el.createDiv();
-          if (format) {
-            container.addClass(format.cssClass);
-            let displayText = trimmedLine;
-            if (format.removePrefix) {
-              displayText = trimmedLine.substring(format.markerLength).trim();
+        const format = this.detectExplicitFormat(trimmed);
+        if (format) {
+          leaf.addClass(format.cssClass);
+          const colonMatch = trimmed.match(CHARACTER_COLON_REGEX);
+          if (format.typeKey === "CHARACTER" && colonMatch) {
+            const [_, charName, colon, dialogueText] = colonMatch;
+            if (dialogueText.trim()) {
+              leaf.empty();
+              leaf.createSpan({ cls: "script-character", text: charName + colon });
+              leaf.createDiv({ cls: "script-dialogue", text: dialogueText.trim() });
             }
-            const colonMatch = displayText.match(CHARACTER_COLON_REGEX);
-            if (format.typeKey === "CHARACTER" && colonMatch) {
-              const [_, charName, colon, dialogueText] = colonMatch;
-              container.setText(charName + colon);
-              if (dialogueText.trim()) {
-                const diagDiv = el.createDiv(CSS_CLASSES.DIALOGUE);
-                diagDiv.setText(dialogueText.trim());
-                globalPreviousType = "DIALOGUE";
-              } else {
-                globalPreviousType = "CHARACTER";
-              }
-            } else {
-              container.setText(displayText);
-              globalPreviousType = format.typeKey;
-            }
-          } else if (globalPreviousType === "CHARACTER" || globalPreviousType === "PARENTHETICAL" || globalPreviousType === "DIALOGUE") {
-            container.addClass(CSS_CLASSES.DIALOGUE);
-            container.setText(trimmedLine);
-            globalPreviousType = "DIALOGUE";
-          } else {
-            container.addClass(CSS_CLASSES.ACTION);
-            container.setText(trimmedLine);
-            globalPreviousType = "ACTION";
           }
-        });
+        } else {
+          leaf.addClass(CSS_CLASSES.ACTION);
+        }
       });
     });
     this.registerEditorExtension(this.livePreviewExtension());
@@ -20031,6 +20219,7 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
         const isScript = view.dom.closest(".fountain") || view.dom.closest(".script");
         if (!isScript)
           return builder.finish();
+        const isLivePreview = view.state.field(import_obsidian3.editorLivePreviewField);
         const selection = view.state.selection;
         let previousType = null;
         const hiddenDeco = import_view.Decoration.mark({ class: LP_CLASSES.SYMBOL });
@@ -20051,8 +20240,8 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
             }
             if (!trimmed) {
               currentType = "EMPTY";
-            } else if (COLOR_TAG_REGEX.test(trimmed)) {
-              if (!isCursorOnLine) {
+            } else if (COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
+              if (isLivePreview && !isCursorOnLine) {
                 lpClass = LP_CLASSES.SYMBOL;
                 shouldHideMarker = true;
               }
@@ -20060,7 +20249,7 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
             } else if (SCENE_REGEX.test(text)) {
               lpClass = LP_CLASSES.SCENE;
               currentType = "SCENE";
-              if (!isCursorOnLine && text.startsWith(".")) {
+              if (isLivePreview && !isCursorOnLine && text.startsWith(".")) {
                 shouldHideMarker = true;
               }
             } else if (TRANSITION_REGEX.test(text)) {
@@ -20077,7 +20266,7 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
               if (format && format.typeKey === "CHARACTER") {
                 lpClass = LP_CLASSES.CHARACTER;
                 currentType = "CHARACTER";
-                if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+                if (isLivePreview && !isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
                   shouldHideMarker = true;
                 }
               } else if (previousType === "CHARACTER" || previousType === "PARENTHETICAL" || previousType === "DIALOGUE") {
@@ -20087,12 +20276,12 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
                 currentType = "ACTION";
               }
             }
-            if (lpClass) {
+            if (isLivePreview && lpClass) {
               builder.add(line.from, line.from, import_view.Decoration.line({
                 attributes: { class: lpClass }
               }));
             }
-            if (shouldHideMarker) {
+            if (isLivePreview && shouldHideMarker) {
               builder.add(line.from, line.from + 1, hiddenDeco);
             }
             previousType = currentType;
@@ -20248,8 +20437,64 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
       filePath = targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
       counter++;
     }
-    const frontmatterContent = "---\ncssclasses: fountain\n---\n\n";
-    const newFile = await this.app.vault.create(filePath, frontmatterContent);
+    let fileContent = `---
+cssclasses:
+- script
+---
+
+
+# YOUR TITLE HERE
+
+Author: Your Name.
+Genre: Monster in the House/Out of the Bottle/Superhero/etc.
+
+**Screenplay syntax**: Basic rules for Fountain-compatible formatting.
+- Scene Heading: 'INT. / EXT.' will automatic bold & uppercase.
+- Character: '@NAME' \\ 'NAME' \\ 'NAME:', will centered. "@" is hidden in preview.'
+- Dialogue: Text below Character, will automatically indented.
+- Parenthetical: '(emotion) / OS: / VO:', will automatic centered & italic.
+- Transition: 'CUT TO: / FADE IN', will right aligned.
+
+To see the Script as a Story Board, choose **Open Story Board**.
+
+In **Story Board** mode, you can press **AI Beat Summary**, auto generate all scene's summary or drag the cards of Story board.
+
+---
+
+## Act One
+
+FADE IN:
+
+EXT. scene 01
+[[summary:  summary of this scene.]]
+[[color: blue]]
+
+Here is Action description. Here is Action description. Here is Action description. 
+Here is Action description. 
+
+BOB:
+It is too hard. I will never make
+
+MARY:
+You can make it.
+
+CUT TO:
+
+INT. scene 02
+
+Here is Action description. Here is Action description. 
+
+BOB:
+It is too hard. I will never make
+
+MARY:
+You can make it.
+`;
+    const templateFile = this.app.vault.getAbstractFileByPath("Script Templet.md");
+    if (templateFile instanceof import_obsidian3.TFile) {
+      fileContent = await this.app.vault.read(templateFile);
+    }
+    const newFile = await this.app.vault.create(filePath, fileContent);
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(newFile);
     this.app.workspace.trigger("rename", newFile, newFile.path);
@@ -20270,14 +20515,10 @@ var ScriptEditorSettingTab = class extends import_obsidian3.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian3.Setting(containerEl).setName("Usage guide").setHeading();
-    new import_obsidian3.Setting(containerEl).setName("Story Board summary length").setDesc("Number of characters to show as a preview for each scene in the Story Board cards.").addText((text) => text.setPlaceholder("50").setValue(this.plugin.settings.summaryLength.toString()).onChange(async (value) => {
-      const num = parseInt(value);
-      if (!isNaN(num) && num >= 0) {
-        this.plugin.settings.summaryLength = num;
-        await this.plugin.saveSettings();
-        this.plugin.refreshStoryBoard(true);
-      }
-    }));
+    new import_obsidian3.Setting(containerEl).setName("AI Beat summary (Gemini 2.5 Flash)").setDesc("Enable AI-powered scene summarization and generation. Get your free API key from Google AI Studio.").addText((text) => text.setPlaceholder("Enter your Gemini API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
+      this.plugin.settings.geminiApiKey = value.trim();
+      await this.plugin.saveSettings();
+    }).inputEl.style.width = "350px");
     new import_obsidian3.Setting(containerEl).setName("1. Basic setup").setDesc("How to activate formatting for a note.").setHeading();
     const setupInfo = containerEl.createDiv();
     setupInfo.createEl("p", { text: "Add the following to your note's frontmatter (Properties) to enable screenplay mode:" });
@@ -20286,10 +20527,11 @@ var ScriptEditorSettingTab = class extends import_obsidian3.PluginSettingTab {
     containerEl.createEl("br");
     new import_obsidian3.Setting(containerEl).setName("2. Quick features").setDesc("Automation and creation tools.").setHeading();
     const featuresDiv = containerEl.createDiv();
+    featuresDiv.createEl("li", { text: "\u2728 Story Board Mode: Activate the grid icon in the right sidebar for a holistic view of your script structure." });
+    featuresDiv.createEl("li", { text: "\u2728 AI Beat Summary: Instantly generate or update scene summaries using Gemini AI, either one-by-one or for the entire script." });
     featuresDiv.createEl("li", { text: "New Script Button: Click the quill/scroll icon in the left ribbon to create a new screenplay." });
-    featuresDiv.createEl("li", { text: "Scene Mode: Find the list icon in the right sidebar (next to the Outline) to view your scene structure." });
     featuresDiv.createEl("li", { text: "Renumber Scenes: Right-click in the editor to re-order your scene numbers automatically." });
-    featuresDiv.createEl("li", { text: 'Professional Export: Right-click and choose "Export to .docx" to generate a Hollywood-standard Word document.' });
+    featuresDiv.createEl("li", { text: 'Professional Export: Right-click and choose "Export to .docx" for Hollywood-standard output.' });
     containerEl.createEl("br");
     new import_obsidian3.Setting(containerEl).setName("3. Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
     const syntaxDiv = containerEl.createDiv();

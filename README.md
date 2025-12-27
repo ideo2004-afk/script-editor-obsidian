@@ -4,9 +4,11 @@ Script Editor is a Fountain-compatible screenplay editor with CJK support (Chine
 
 ---
 
-## 🆕 New in v1.6.1: Scene Color-Coding & Interactive Story Board
-- **Color-Coding**: Organize your story with visual color tags on scene cards! 
-- **Interactive Board**: Full **Drag & Drop** reordering with precise insertion indicators.
+## 🆕 New in v1.6.1: AI-Powered Beats & Markdown-Native Philosophy
+- **AI Beat Summary**: Integrate Gemini 2.5 Flash to instantly generate scene summaries or new scenes based on context.
+- **Bulk AI Processing**: One-click to analyze and summarize your entire screenplay.
+- **Markdown-Native**: A hybrid design that respects standard Markdown (Headings, Lists, Bold) while delivering professional screenplay formatting.
+- **Interactive Story Board**: Full **Drag & Drop** reordering with precise insertion indicators and AI tools.
 
 ---
 
