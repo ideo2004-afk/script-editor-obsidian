@@ -524,7 +524,11 @@ export default class ScriptEditorPlugin extends Plugin {
                 // @ts-ignore
                 const isLivePreview = view.state.field(editorLivePreviewField);
 
+                // Source Mode: 完全不處理，讓 Obsidian 正常顯示 Markdown
+                if (!isLivePreview) return builder.finish();
+
                 const selection = view.state.selection;
+
                 let previousType: string | null = null;
                 const hiddenDeco = Decoration.mark({ class: LP_CLASSES.SYMBOL });
 
@@ -555,27 +559,25 @@ export default class ScriptEditorPlugin extends Plugin {
                             lpClass = LP_CLASSES.NOTE;
                             currentType = 'EMPTY';
 
-                            if (isLivePreview) {
-                                // 找到標籤的結束位置與內容的結束位置
-                                const prefixMatch = text.match(/^%%note:\s*/i);
-                                if (prefixMatch) {
-                                    const prefixLen = prefixMatch[0].length;
-                                    const contentStart = line.from + prefixLen;
-                                    const contentEnd = line.to - 2; // 扣掉結尾的 %%
+                            // 找到標籤的結束位置與內容的結束位置
+                            const prefixMatch = text.match(/^%%note:\s*/i);
+                            if (prefixMatch) {
+                                const prefixLen = prefixMatch[0].length;
+                                const contentStart = line.from + prefixLen;
+                                const contentEnd = line.to - 2; // 扣掉結尾的 %%
 
-                                    // 只對「中間真正內容」套用黃色方塊樣式
-                                    if (contentStart < contentEnd) {
-                                        lineDecos.push({ from: contentStart, to: contentEnd, deco: Decoration.mark({ class: 'lp-note-content' }) });
-                                    }
-
-                                    // 依然隱藏前後標記
-                                    lineDecos.push({ from: line.from, to: contentStart, deco: hiddenDeco });
-                                    lineDecos.push({ from: contentEnd, to: line.to, deco: hiddenDeco });
+                                // 只對「中間真正內容」套用黃色方塊樣式
+                                if (contentStart < contentEnd) {
+                                    lineDecos.push({ from: contentStart, to: contentEnd, deco: Decoration.mark({ class: 'lp-note-content' }) });
                                 }
+
+                                // 依然隱藏前後標記
+                                lineDecos.push({ from: line.from, to: contentStart, deco: hiddenDeco });
+                                lineDecos.push({ from: contentEnd, to: line.to, deco: hiddenDeco });
                             }
                         }
                         else if (COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) { // Tags
-                            if (isLivePreview && !isCursorOnLine) {
+                            if (!isCursorOnLine) {
                                 lpClass = LP_CLASSES.SYMBOL; // This will trigger hiding via our CSS
                                 shouldHideMarker = true;
                             }
@@ -584,7 +586,7 @@ export default class ScriptEditorPlugin extends Plugin {
                         else if (SCENE_REGEX.test(text)) {
                             lpClass = LP_CLASSES.SCENE;
                             currentType = 'SCENE';
-                            if (isLivePreview && !isCursorOnLine && text.startsWith('.')) {
+                            if (!isCursorOnLine && text.startsWith('.')) {
                                 shouldHideMarker = true;
                             }
                         }
@@ -606,7 +608,7 @@ export default class ScriptEditorPlugin extends Plugin {
                             if (format && format.typeKey === 'CHARACTER') {
                                 lpClass = LP_CLASSES.CHARACTER;
                                 currentType = 'CHARACTER';
-                                if (isLivePreview && !isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+                                if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
                                     shouldHideMarker = true;
                                 }
                             } else if (previousType === 'CHARACTER' || previousType === 'PARENTHETICAL' || previousType === 'DIALOGUE') {
@@ -617,13 +619,13 @@ export default class ScriptEditorPlugin extends Plugin {
                             }
                         }
 
-                        if (isLivePreview && lpClass) {
+                        if (lpClass) {
                             builder.add(line.from, line.from, Decoration.line({
                                 attributes: { class: lpClass }
                             }));
                         }
 
-                        if (isLivePreview && shouldHideMarker) {
+                        if (shouldHideMarker) {
                             lineDecos.push({ from: line.from, to: line.from + 1, deco: hiddenDeco });
                         }
 

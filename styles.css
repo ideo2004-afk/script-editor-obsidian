@@ -97,16 +97,18 @@
     & .lp-note-content {
         /* 設為 inline-block，讓它在右對齊的行內自然形成方塊 */
         display: inline-block !important;
-        width: 250px !important;
+        width: 280px !important;
+        margin-right: -80px !important;
+        /* 往右突出 80px */
         text-align: left !important;
 
-        font-size: 0.6em !important;
+        font-size: 0.7em !important;
         color: var(--text-normal) !important;
         opacity: 0.8;
 
         background-color: rgba(251, 233, 154, 0.4) !important;
         border-radius: 4px !important;
-        padding: 8px !important;
+        padding: 16px !important;
 
         font-family: var(--font-interface);
         font-style: normal !important;
@@ -132,14 +134,8 @@
         pointer-events: none !important;
     }
 
-    /* Show markers in Source Mode */
-    .markdown-source-view.mod-cm6:not(.is-live-preview) & .lp-marker-symbol {
-        color: var(--text-muted) !important;
-        font-size: inherit !important;
-        letter-spacing: normal !important;
-    }
-
     /* H1 Title Centering */
+
     & h1,
     & .HyperMD-header-1 {
         text-align: center !important;

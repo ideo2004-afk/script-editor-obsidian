@@ -20286,6 +20286,8 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
         if (!isScript)
           return builder.finish();
         const isLivePreview = view.state.field(import_obsidian3.editorLivePreviewField);
+        if (!isLivePreview)
+          return builder.finish();
         const selection = view.state.selection;
         let previousType = null;
         const hiddenDeco = import_view.Decoration.mark({ class: LP_CLASSES.SYMBOL });
@@ -20310,21 +20312,19 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
             } else if (NOTE_REGEX.test(trimmed)) {
               lpClass = LP_CLASSES.NOTE;
               currentType = "EMPTY";
-              if (isLivePreview) {
-                const prefixMatch = text.match(/^%%note:\s*/i);
-                if (prefixMatch) {
-                  const prefixLen = prefixMatch[0].length;
-                  const contentStart = line.from + prefixLen;
-                  const contentEnd = line.to - 2;
-                  if (contentStart < contentEnd) {
-                    lineDecos.push({ from: contentStart, to: contentEnd, deco: import_view.Decoration.mark({ class: "lp-note-content" }) });
-                  }
-                  lineDecos.push({ from: line.from, to: contentStart, deco: hiddenDeco });
-                  lineDecos.push({ from: contentEnd, to: line.to, deco: hiddenDeco });
+              const prefixMatch = text.match(/^%%note:\s*/i);
+              if (prefixMatch) {
+                const prefixLen = prefixMatch[0].length;
+                const contentStart = line.from + prefixLen;
+                const contentEnd = line.to - 2;
+                if (contentStart < contentEnd) {
+                  lineDecos.push({ from: contentStart, to: contentEnd, deco: import_view.Decoration.mark({ class: "lp-note-content" }) });
                 }
+                lineDecos.push({ from: line.from, to: contentStart, deco: hiddenDeco });
+                lineDecos.push({ from: contentEnd, to: line.to, deco: hiddenDeco });
               }
             } else if (COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
-              if (isLivePreview && !isCursorOnLine) {
+              if (!isCursorOnLine) {
                 lpClass = LP_CLASSES.SYMBOL;
                 shouldHideMarker = true;
               }
@@ -20332,7 +20332,7 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
             } else if (SCENE_REGEX.test(text)) {
               lpClass = LP_CLASSES.SCENE;
               currentType = "SCENE";
-              if (isLivePreview && !isCursorOnLine && text.startsWith(".")) {
+              if (!isCursorOnLine && text.startsWith(".")) {
                 shouldHideMarker = true;
               }
             } else if (TRANSITION_REGEX.test(text)) {
@@ -20349,7 +20349,7 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
               if (format && format.typeKey === "CHARACTER") {
                 lpClass = LP_CLASSES.CHARACTER;
                 currentType = "CHARACTER";
-                if (isLivePreview && !isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+                if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
                   shouldHideMarker = true;
                 }
               } else if (previousType === "CHARACTER" || previousType === "PARENTHETICAL" || previousType === "DIALOGUE") {
@@ -20359,12 +20359,12 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
                 currentType = "ACTION";
               }
             }
-            if (isLivePreview && lpClass) {
+            if (lpClass) {
               builder.add(line.from, line.from, import_view.Decoration.line({
                 attributes: { class: lpClass }
               }));
             }
-            if (isLivePreview && shouldHideMarker) {
+            if (shouldHideMarker) {
               lineDecos.push({ from: line.from, to: line.from + 1, deco: hiddenDeco });
             }
             lineDecos.sort((a, b) => a.from - b.from).forEach((d) => {
