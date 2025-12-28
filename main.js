@@ -20031,6 +20031,27 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
     });
     this.registerEditorExtension(this.livePreviewExtension());
     this.registerEvent(
+      this.app.workspace.on("editor-change", (editor) => {
+        const lineCount = editor.lineCount();
+        const cursor = editor.getCursor();
+        const lineText = editor.getLine(cursor.line).trim();
+        if (lineText === "%%note:%%") {
+          const from = { line: cursor.line, ch: 0 };
+          const to = { line: cursor.line, ch: editor.getLine(cursor.line).length };
+          if (lineCount > 1) {
+            if (cursor.line < lineCount - 1) {
+              to.line = cursor.line + 1;
+              to.ch = 0;
+            } else if (cursor.line > 0) {
+              from.line = cursor.line - 1;
+              from.ch = editor.getLine(from.line).length;
+            }
+          }
+          editor.replaceRange("", from, to);
+        }
+      })
+    );
+    this.registerEvent(
       this.app.workspace.on("editor-menu", (menu, editor, view) => {
         var _a;
         const fileCache = view.file ? this.app.metadataCache.getFileCache(view.file) : null;
@@ -20265,11 +20286,16 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
               lpClass = LP_CLASSES.NOTE;
               currentType = "EMPTY";
               if (isLivePreview) {
-                lineDecos.push({ from: line.from, to: line.to, deco: import_view.Decoration.mark({ class: "lp-note-content" }) });
                 const prefixMatch = text.match(/^%%note:\s*/i);
                 if (prefixMatch) {
-                  lineDecos.push({ from: line.from, to: line.from + prefixMatch[0].length, deco: hiddenDeco });
-                  lineDecos.push({ from: line.to - 2, to: line.to, deco: hiddenDeco });
+                  const prefixLen = prefixMatch[0].length;
+                  const contentStart = line.from + prefixLen;
+                  const contentEnd = line.to - 2;
+                  if (contentStart < contentEnd) {
+                    lineDecos.push({ from: contentStart, to: contentEnd, deco: import_view.Decoration.mark({ class: "lp-note-content" }) });
+                  }
+                  lineDecos.push({ from: line.from, to: contentStart, deco: hiddenDeco });
+                  lineDecos.push({ from: contentEnd, to: line.to, deco: hiddenDeco });
                 }
               }
             } else if (COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {

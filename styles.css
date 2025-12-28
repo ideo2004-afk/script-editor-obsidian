@@ -118,7 +118,7 @@
 
 
     /* Ensure the actual text is visible even if Obsidian thinks it's a comment */
-    & .cm-line.lp-note .cm-comment {
+    & .cm-line.lp-note .cm-comment:not(.lp-marker-symbol) {
         color: inherit !important;
         font-size: inherit !important;
         letter-spacing: normal !important;
@@ -127,8 +127,9 @@
     /* Only the specifically tagged markers (hiddenDeco) get hidden */
     & .lp-marker-symbol {
         color: transparent !important;
-        font-size: 1px !important;
-        letter-spacing: -1ch;
+        font-size: 0px !important;
+        letter-spacing: -1ch !important;
+        pointer-events: none !important;
     }
 
     /* Show markers in Source Mode */

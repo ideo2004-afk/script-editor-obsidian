@@ -196,6 +196,37 @@ export default class ScriptEditorPlugin extends Plugin {
         // 4. Editor Extension (Live Preview)
         this.registerEditorExtension(this.livePreviewExtension());
 
+        // 4a. Automatic Cleanup for Empty Notes
+        this.registerEvent(
+            this.app.workspace.on("editor-change", (editor: Editor) => {
+                const lineCount = editor.lineCount();
+                const cursor = editor.getCursor();
+
+                // Only check the current line for performance and better UX
+                const lineText = editor.getLine(cursor.line).trim();
+
+                // If the line is EXACTLY the markers with no content
+                if (lineText === "%%note:%%") {
+                    // Delete the line
+                    const from = { line: cursor.line, ch: 0 };
+                    const to = { line: cursor.line, ch: editor.getLine(cursor.line).length };
+
+                    // If it's not the only line, try to include the newline
+                    if (lineCount > 1) {
+                        if (cursor.line < lineCount - 1) {
+                            to.line = cursor.line + 1;
+                            to.ch = 0;
+                        } else if (cursor.line > 0) {
+                            from.line = cursor.line - 1;
+                            from.ch = editor.getLine(from.line).length;
+                        }
+                    }
+
+                    editor.replaceRange("", from, to);
+                }
+            })
+        );
+
         // 5. Context Menu
         this.registerEvent(
             this.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
@@ -492,14 +523,21 @@ export default class ScriptEditorPlugin extends Plugin {
                             currentType = 'EMPTY';
 
                             if (isLivePreview) {
-                                // Apply note styling to the ENTIRE line content to allow absolute positioning
-                                lineDecos.push({ from: line.from, to: line.to, deco: Decoration.mark({ class: 'lp-note-content' }) });
-
-                                // Always hide the markers for Note to keep it clean
+                                // 找到標籤的結束位置與內容的結束位置
                                 const prefixMatch = text.match(/^%%note:\s*/i);
                                 if (prefixMatch) {
-                                    lineDecos.push({ from: line.from, to: line.from + prefixMatch[0].length, deco: hiddenDeco });
-                                    lineDecos.push({ from: line.to - 2, to: line.to, deco: hiddenDeco });
+                                    const prefixLen = prefixMatch[0].length;
+                                    const contentStart = line.from + prefixLen;
+                                    const contentEnd = line.to - 2; // 扣掉結尾的 %%
+
+                                    // 只對「中間真正內容」套用黃色方塊樣式
+                                    if (contentStart < contentEnd) {
+                                        lineDecos.push({ from: contentStart, to: contentEnd, deco: Decoration.mark({ class: 'lp-note-content' }) });
+                                    }
+
+                                    // 依然隱藏前後標記
+                                    lineDecos.push({ from: line.from, to: contentStart, deco: hiddenDeco });
+                                    lineDecos.push({ from: contentEnd, to: line.to, deco: hiddenDeco });
                                 }
                             }
                         }
