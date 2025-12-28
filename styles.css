@@ -88,6 +88,43 @@
         text-transform: uppercase;
     }
 
+    & .cm-line.lp-note {
+        /* 使用原生的對齊邏輯，與 FADE IN (lp-transition) 一致 */
+        text-align: right !important;
+        position: relative !important;
+    }
+
+    & .lp-note-content {
+        /* 設為 inline-block，讓它在右對齊的行內自然形成方塊 */
+        display: inline-block !important;
+        width: 250px !important;
+        text-align: left !important;
+
+        font-size: 0.6em !important;
+        color: var(--text-normal) !important;
+        opacity: 0.8;
+
+        background-color: rgba(251, 233, 154, 0.4) !important;
+        border-radius: 4px !important;
+        padding: 8px !important;
+
+        font-family: var(--font-interface);
+        font-style: normal !important;
+        line-height: 1.5;
+        white-space: normal !important;
+        z-index: 10;
+        cursor: text !important;
+    }
+
+
+    /* Ensure the actual text is visible even if Obsidian thinks it's a comment */
+    & .cm-line.lp-note .cm-comment {
+        color: inherit !important;
+        font-size: inherit !important;
+        letter-spacing: normal !important;
+    }
+
+    /* Only the specifically tagged markers (hiddenDeco) get hidden */
     & .lp-marker-symbol {
         color: transparent !important;
         font-size: 1px !important;

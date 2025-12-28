@@ -19,6 +19,7 @@ export const OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
 export const CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30})([:：])\s*(.*)$/;
 export const COLOR_TAG_REGEX = /^%%color:\s*(red|blue|green|yellow|purple|none|无|無)%%$/i;
 export const SUMMARY_REGEX = /^%%summary:\s*(.*)%%$/i;
+export const NOTE_REGEX = /^%%note:\s*(.*)%%$/i;
 
 // CSS Classes (Reading Mode / PDF)
 const CSS_CLASSES = {
@@ -37,6 +38,7 @@ const LP_CLASSES = {
     DIALOGUE: 'lp-dialogue',
     PARENTHETICAL: 'lp-parenthetical',
     TRANSITION: 'lp-transition',
+    NOTE: 'lp-note',
     SYMBOL: 'lp-marker-symbol'
 }
 
@@ -162,7 +164,7 @@ export default class ScriptEditorPlugin extends Plugin {
 
                 // Obsidian naturally hides %% tags in Reading Mode, 
                 // but we check them here to ensure we don't style them as 'Action'
-                if (COLOR_TAG_REGEX.test(text) || SUMMARY_REGEX.test(text)) {
+                if (COLOR_TAG_REGEX.test(text) || SUMMARY_REGEX.test(text) || NOTE_REGEX.test(text)) {
                     node.style.display = 'none';
                     node.dataset.scriptProcessed = "true";
                     return;
@@ -230,6 +232,11 @@ export default class ScriptEditorPlugin extends Plugin {
                         m.addItem((i: MenuItem) => i.setTitle("FADE OUT.").onClick(() => this.insertText(editor, "FADE OUT.", true)));
                         m.addItem((i: MenuItem) => i.setTitle("FADE IN:").onClick(() => this.insertText(editor, "FADE IN:", true)));
                         m.addItem((i: MenuItem) => i.setTitle("DISSOLVE TO:").onClick(() => this.insertText(editor, "DISSOLVE TO:", true)));
+                    });
+
+                    subMenu.addItem((item: MenuItem) => {
+                        item.setTitle("Insert Note").setIcon("sticky-note")
+                            .onClick(() => this.insertText(editor, "%%note: Note text here%%", true));
                     });
 
                     subMenu.addSeparator();
@@ -475,8 +482,26 @@ export default class ScriptEditorPlugin extends Plugin {
                             }
                         }
 
+                        const lineDecos: { from: number, to: number, deco: Decoration }[] = [];
+
                         if (!trimmed) { // Empty lines
                             currentType = 'EMPTY';
+                        }
+                        else if (NOTE_REGEX.test(trimmed)) {
+                            lpClass = LP_CLASSES.NOTE;
+                            currentType = 'EMPTY';
+
+                            if (isLivePreview) {
+                                // Apply note styling to the ENTIRE line content to allow absolute positioning
+                                lineDecos.push({ from: line.from, to: line.to, deco: Decoration.mark({ class: 'lp-note-content' }) });
+
+                                // Always hide the markers for Note to keep it clean
+                                const prefixMatch = text.match(/^%%note:\s*/i);
+                                if (prefixMatch) {
+                                    lineDecos.push({ from: line.from, to: line.from + prefixMatch[0].length, deco: hiddenDeco });
+                                    lineDecos.push({ from: line.to - 2, to: line.to, deco: hiddenDeco });
+                                }
+                            }
                         }
                         else if (COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) { // Tags
                             if (isLivePreview && !isCursorOnLine) {
@@ -528,8 +553,15 @@ export default class ScriptEditorPlugin extends Plugin {
                         }
 
                         if (isLivePreview && shouldHideMarker) {
-                            builder.add(line.from, line.from + 1, hiddenDeco);
+                            lineDecos.push({ from: line.from, to: line.from + 1, deco: hiddenDeco });
                         }
+
+                        // Add all collected mark decorations in correct order
+                        lineDecos.sort((a, b) => a.from - b.from).forEach(d => {
+                            if (d.from < d.to) { // Safety check
+                                builder.add(d.from, d.to, d.deco);
+                            }
+                        });
 
                         previousType = currentType;
                         pos = line.to + 1;

@@ -26,6 +26,7 @@ var main_exports = {};
 __export(main_exports, {
   CHARACTER_COLON_REGEX: () => CHARACTER_COLON_REGEX,
   COLOR_TAG_REGEX: () => COLOR_TAG_REGEX,
+  NOTE_REGEX: () => NOTE_REGEX,
   OS_DIALOGUE_REGEX: () => OS_DIALOGUE_REGEX,
   PARENTHETICAL_REGEX: () => PARENTHETICAL_REGEX,
   SCENE_REGEX: () => SCENE_REGEX,
@@ -19016,7 +19017,7 @@ var DocxExporter = class {
     let previousType = "ACTION";
     for (let lineText of lines) {
       const trimmed = lineText.trim();
-      if (!trimmed || COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
+      if (!trimmed || COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed) || NOTE_REGEX.test(trimmed)) {
         if (!trimmed)
           paragraphs.push(new Paragraph({}));
         previousType = "ACTION";
@@ -19896,6 +19897,7 @@ var OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
 var CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30})([:：])\s*(.*)$/;
 var COLOR_TAG_REGEX = /^%%color:\s*(red|blue|green|yellow|purple|none|无|無)%%$/i;
 var SUMMARY_REGEX = /^%%summary:\s*(.*)%%$/i;
+var NOTE_REGEX = /^%%note:\s*(.*)%%$/i;
 var CSS_CLASSES = {
   SCENE: "script-scene",
   CHARACTER: "script-character",
@@ -19910,6 +19912,7 @@ var LP_CLASSES = {
   DIALOGUE: "lp-dialogue",
   PARENTHETICAL: "lp-parenthetical",
   TRANSITION: "lp-transition",
+  NOTE: "lp-note",
   SYMBOL: "lp-marker-symbol"
 };
 var DEFAULT_SETTINGS = {
@@ -20000,7 +20003,7 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
         const text = ((_a = node.innerText) == null ? void 0 : _a.trim()) || "";
         if (!text)
           return;
-        if (COLOR_TAG_REGEX.test(text) || SUMMARY_REGEX.test(text)) {
+        if (COLOR_TAG_REGEX.test(text) || SUMMARY_REGEX.test(text) || NOTE_REGEX.test(text)) {
           node.style.display = "none";
           node.dataset.scriptProcessed = "true";
           return;
@@ -20055,6 +20058,9 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
             m.addItem((i) => i.setTitle("FADE OUT.").onClick(() => this.insertText(editor, "FADE OUT.", true)));
             m.addItem((i) => i.setTitle("FADE IN:").onClick(() => this.insertText(editor, "FADE IN:", true)));
             m.addItem((i) => i.setTitle("DISSOLVE TO:").onClick(() => this.insertText(editor, "DISSOLVE TO:", true)));
+          });
+          subMenu.addItem((item2) => {
+            item2.setTitle("Insert Note").setIcon("sticky-note").onClick(() => this.insertText(editor, "%%note: Note text here%%", true));
           });
           subMenu.addSeparator();
           subMenu.addItem((subItem) => {
@@ -20252,8 +20258,20 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
                 break;
               }
             }
+            const lineDecos = [];
             if (!trimmed) {
               currentType = "EMPTY";
+            } else if (NOTE_REGEX.test(trimmed)) {
+              lpClass = LP_CLASSES.NOTE;
+              currentType = "EMPTY";
+              if (isLivePreview) {
+                lineDecos.push({ from: line.from, to: line.to, deco: import_view.Decoration.mark({ class: "lp-note-content" }) });
+                const prefixMatch = text.match(/^%%note:\s*/i);
+                if (prefixMatch) {
+                  lineDecos.push({ from: line.from, to: line.from + prefixMatch[0].length, deco: hiddenDeco });
+                  lineDecos.push({ from: line.to - 2, to: line.to, deco: hiddenDeco });
+                }
+              }
             } else if (COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
               if (isLivePreview && !isCursorOnLine) {
                 lpClass = LP_CLASSES.SYMBOL;
@@ -20296,8 +20314,13 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
               }));
             }
             if (isLivePreview && shouldHideMarker) {
-              builder.add(line.from, line.from + 1, hiddenDeco);
+              lineDecos.push({ from: line.from, to: line.from + 1, deco: hiddenDeco });
             }
+            lineDecos.sort((a, b) => a.from - b.from).forEach((d) => {
+              if (d.from < d.to) {
+                builder.add(d.from, d.to, d.deco);
+              }
+            });
             previousType = currentType;
             pos = line.to + 1;
           }

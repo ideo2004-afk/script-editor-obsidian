@@ -1,5 +1,5 @@
 import { Document, Paragraph, TextRun, AlignmentType, HeadingLevel, Packer } from 'docx';
-import { CHARACTER_COLON_REGEX, SCENE_REGEX, TRANSITION_REGEX, PARENTHETICAL_REGEX, OS_DIALOGUE_REGEX, COLOR_TAG_REGEX, SUMMARY_REGEX } from './main';
+import { CHARACTER_COLON_REGEX, SCENE_REGEX, TRANSITION_REGEX, PARENTHETICAL_REGEX, OS_DIALOGUE_REGEX, COLOR_TAG_REGEX, SUMMARY_REGEX, NOTE_REGEX } from './main';
 
 export class DocxExporter {
     static async exportToDocx(text: string, title: string): Promise<Buffer> {
@@ -20,7 +20,7 @@ export class DocxExporter {
 
         for (let lineText of lines) {
             const trimmed = lineText.trim();
-            if (!trimmed || COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
+            if (!trimmed || COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed) || NOTE_REGEX.test(trimmed)) {
                 if (!trimmed) paragraphs.push(new Paragraph({}));
                 previousType = 'ACTION';
                 continue;

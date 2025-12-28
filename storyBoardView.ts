@@ -1,5 +1,5 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownView, Menu, setIcon, requestUrl, Notice, setTooltip } from "obsidian";
-import { SCENE_REGEX, COLOR_TAG_REGEX, SUMMARY_REGEX } from "./main";
+import { SCENE_REGEX, COLOR_TAG_REGEX, SUMMARY_REGEX, NOTE_REGEX } from "./main";
 
 export const STORYBOARD_VIEW_TYPE = "script-editor-storyboard-view";
 
