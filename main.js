@@ -19988,6 +19988,20 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
       name: "Show scene mode",
       callback: () => this.activateView()
     });
+    this.addCommand({
+      id: "export-summary",
+      name: "Export scene summaries to .md",
+      checkCallback: (checking) => {
+        const view = this.app.workspace.getActiveViewOfType(import_obsidian3.MarkdownView);
+        if (view && this.isScript(view.file)) {
+          if (!checking) {
+            this.exportSummary(view.file);
+          }
+          return true;
+        }
+        return false;
+      }
+    });
     this.registerMarkdownPostProcessor((element, context) => {
       const fm = context.frontmatter;
       const cls = (fm == null ? void 0 : fm.cssclasses) || (fm == null ? void 0 : fm.cssclass) || [];
@@ -20094,6 +20108,9 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
           subMenu.addItem((subItem) => {
             subItem.setTitle("Export to .docx").setIcon("file-output").onClick(() => this.exportFileToDocx(view.file));
           });
+          subMenu.addItem((subItem) => {
+            subItem.setTitle("Export summary").setIcon("file-text").onClick(() => this.exportSummary(view.file));
+          });
         });
       })
     );
@@ -20117,6 +20134,11 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
             menu.addItem((item) => {
               item.setTitle("Export to .docx").setIcon("file-output").onClick(async () => {
                 await this.exportFileToDocx(file);
+              });
+            });
+            menu.addItem((item) => {
+              item.setTitle("Export summary").setIcon("file-text").onClick(async () => {
+                await this.exportSummary(file);
               });
             });
           }
@@ -20482,6 +20504,62 @@ var ScriptEditorPlugin = class extends import_obsidian3.Plugin {
     } catch (error) {
       console.error("Export to DOCX failed:", error);
       new import_obsidian3.Notice(`Failed to export to DOCX: ${error.message}`);
+    }
+  }
+  async exportSummary(file) {
+    var _a;
+    try {
+      const content = await this.app.vault.read(file);
+      const lines = content.split("\n");
+      const baseName = file.basename;
+      const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
+      const summaryFileName = `${baseName} Summary.md`;
+      const summaryFilePath = folderPath === "/" ? summaryFileName : `${folderPath}/${summaryFileName}`;
+      let summaryLines = [];
+      let currentScene = null;
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("# ")) {
+          summaryLines.push(trimmed + "\n");
+        } else if (trimmed.startsWith("## ")) {
+          summaryLines.push("\n" + trimmed + "\n");
+        } else if (SCENE_REGEX.test(trimmed)) {
+          const match = trimmed.match(SCENE_REGEX);
+          if (match && match[1]) {
+            currentScene = match[1].trim();
+          } else {
+            currentScene = trimmed;
+          }
+        } else if (currentScene && SUMMARY_REGEX.test(trimmed)) {
+          const summaryMatch = trimmed.match(SUMMARY_REGEX);
+          if (summaryMatch) {
+            const sceneSummary = summaryMatch[1].trim();
+            summaryLines.push(`${currentScene} ${sceneSummary}
+`);
+            currentScene = null;
+          }
+        }
+      });
+      if (summaryLines.length === 0) {
+        new import_obsidian3.Notice("No scenes with summaries found in the script.");
+        return;
+      }
+      const finalContent = summaryLines.join("\n");
+      const existingFile = this.app.vault.getAbstractFileByPath(summaryFilePath);
+      if (existingFile instanceof import_obsidian3.TFile) {
+        await this.app.vault.modify(existingFile, finalContent);
+      } else {
+        await this.app.vault.create(summaryFilePath, finalContent);
+      }
+      new import_obsidian3.Notice(`Successfully exported summary to ${summaryFileName}`);
+      const newFile = this.app.vault.getAbstractFileByPath(summaryFilePath);
+      if (newFile instanceof import_obsidian3.TFile) {
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.openFile(newFile);
+      }
+    } catch (error) {
+      console.error("Export summary failed:", error);
+      new import_obsidian3.Notice(`Failed to export summary: ${error.message}`);
     }
   }
   async createNewScript(folderPath) {

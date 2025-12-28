@@ -145,6 +145,21 @@ export default class ScriptEditorPlugin extends Plugin {
             callback: () => this.activateView()
         });
 
+        this.addCommand({
+            id: 'export-summary',
+            name: 'Export scene summaries to .md',
+            checkCallback: (checking: boolean) => {
+                const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+                if (view && this.isScript(view.file)) {
+                    if (!checking) {
+                        this.exportSummary(view.file!);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
         // 3. Post Processor (Reading Mode & PDF)
         this.registerMarkdownPostProcessor((element, context) => {
             const fm = context.frontmatter;
@@ -288,6 +303,11 @@ export default class ScriptEditorPlugin extends Plugin {
                         subItem.setTitle("Export to .docx").setIcon("file-output")
                             .onClick(() => this.exportFileToDocx(view.file!));
                     });
+
+                    subMenu.addItem((subItem: MenuItem) => {
+                        subItem.setTitle("Export summary").setIcon("file-text")
+                            .onClick(() => this.exportSummary(view.file!));
+                    });
                 });
             })
         );
@@ -319,6 +339,15 @@ export default class ScriptEditorPlugin extends Plugin {
                                 .setIcon("file-output")
                                 .onClick(async () => {
                                     await this.exportFileToDocx(file);
+                                });
+                        });
+
+                        menu.addItem((item) => {
+                            item
+                                .setTitle("Export summary")
+                                .setIcon("file-text")
+                                .onClick(async () => {
+                                    await this.exportSummary(file);
                                 });
                         });
                     }
@@ -758,6 +787,80 @@ export default class ScriptEditorPlugin extends Plugin {
         } catch (error) {
             console.error("Export to DOCX failed:", error);
             new Notice(`Failed to export to DOCX: ${error.message}`);
+        }
+    }
+
+    async exportSummary(file: TFile) {
+        try {
+            const content = await this.app.vault.read(file);
+            const lines = content.split('\n');
+            const baseName = file.basename;
+            const folderPath = file.parent?.path || "/";
+            const summaryFileName = `${baseName} Summary.md`;
+            const summaryFilePath = folderPath === "/" ? summaryFileName : `${folderPath}/${summaryFileName}`;
+
+            let summaryLines: string[] = [];
+            let currentScene: string | null = null;
+
+            lines.forEach((line) => {
+                const trimmed = line.trim();
+
+                // H1
+                if (trimmed.startsWith('# ')) {
+                    summaryLines.push(trimmed + '\n');
+                }
+                // H2
+                else if (trimmed.startsWith('## ')) {
+                    summaryLines.push('\n' + trimmed + '\n');
+                }
+                // Scene Heading
+                else if (SCENE_REGEX.test(trimmed)) {
+                    const match = trimmed.match(SCENE_REGEX);
+                    // Extract Scene Number (Group 1)
+                    if (match && match[1]) {
+                        currentScene = match[1].trim(); // Only the number, e.g., "1."
+                    } else {
+                        currentScene = trimmed; // Fallback if no number
+                    }
+                }
+                // Summary Tag
+                else if (currentScene && SUMMARY_REGEX.test(trimmed)) {
+                    const summaryMatch = trimmed.match(SUMMARY_REGEX);
+                    if (summaryMatch) {
+                        const sceneSummary = summaryMatch[1].trim();
+                        // Format: Number Summary (e.g., 1. summary text)
+                        summaryLines.push(`${currentScene} ${sceneSummary}\n`);
+                        currentScene = null; // Found it, reset
+                    }
+                }
+            });
+            if (summaryLines.length === 0) {
+                new Notice("No scenes with summaries found in the script.");
+                return;
+            }
+
+            const finalContent = summaryLines.join('\n');
+
+            // Create or overwrite the summary file
+            const existingFile = this.app.vault.getAbstractFileByPath(summaryFilePath);
+            if (existingFile instanceof TFile) {
+                await this.app.vault.modify(existingFile, finalContent);
+            } else {
+                await this.app.vault.create(summaryFilePath, finalContent);
+            }
+
+            new Notice(`Successfully exported summary to ${summaryFileName}`);
+
+            // Open the created summary file
+            const newFile = this.app.vault.getAbstractFileByPath(summaryFilePath);
+            if (newFile instanceof TFile) {
+                const leaf = this.app.workspace.getLeaf(false);
+                await leaf.openFile(newFile);
+            }
+
+        } catch (error) {
+            console.error("Export summary failed:", error);
+            new Notice(`Failed to export summary: ${error.message}`);
         }
     }
 
