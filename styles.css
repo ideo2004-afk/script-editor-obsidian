@@ -852,6 +852,7 @@
 }
 
 /* Tablet (iPad) Specific Fixes (Tiered) */
+
 .is-tablet {
     & .storyboard-grid {
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -860,4 +861,93 @@
     & .storyboard-card-summary {
         -webkit-line-clamp: 8;
     }
+}
+
+/* ------------------------------------------------------------------
+   6. SETTINGS TAB STYLES
+   ------------------------------------------------------------------ */
+.script-editor-settings-support {
+    margin-top: 40px;
+    border-top: 1px solid var(--background-modifier-border);
+    padding-top: 30px;
+    text-align: center;
+}
+
+.script-editor-settings-support p {
+    color: var(--text-muted);
+    font-size: 0.95em;
+    margin-bottom: 20px;
+}
+
+.script-editor-sponsor-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.script-editor-sponsor-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    text-decoration: none !important;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.script-editor-sponsor-btn:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+.github-btn {
+    background-color: var(--background-modifier-border);
+    border-radius: 8px;
+    padding: 0 16px;
+    color: var(--text-normal) !important;
+    font-weight: 600;
+    font-size: 0.9em;
+    gap: 8px;
+    border: 1px solid var(--background-modifier-border-hover);
+}
+
+.github-sponsor-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ea4aaa;
+    /* GitHub Sponsor Pinkish color */
+}
+
+.github-sponsor-icon svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+@keyframes heartbeat {
+    0% {
+        transform: scale(1);
+    }
+
+    15% {
+        transform: scale(1.15);
+    }
+
+    30% {
+        transform: scale(1);
+    }
+
+    45% {
+        transform: scale(1.15);
+    }
+
+    70% {
+        transform: scale(1);
+    }
+}
+
+.github-btn:hover .github-sponsor-icon {
+    animation: heartbeat 1.5s infinite;
 }

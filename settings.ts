@@ -11,6 +11,8 @@ export const DEFAULT_SETTINGS: ScriptEditorSettings = {
     geminiApiKey: ''
 }
 
+export const SPONSOR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+
 export class ScriptEditorSettingTab extends PluginSettingTab {
     plugin: ScriptEditorPlugin;
 
@@ -67,14 +69,28 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
 
 
         // Support
-        const supportDiv = containerEl.createEl('div', { attr: { style: 'margin-top: 20px; border-top: 1px solid var(--background-modifier-border); padding-top: 20px;' } });
+        const supportDiv = containerEl.createEl('div', { cls: 'script-editor-settings-support' });
         supportDiv.createEl('p', { text: 'If you enjoy using Script Editor, consider supporting its development!' });
-        const link = supportDiv.createEl('a', { href: 'https://buymeacoffee.com/ideo2004c' });
-        link.createEl('img', {
+
+        const sponsorActions = supportDiv.createDiv({ cls: 'script-editor-sponsor-actions' });
+
+        const bmacLink = sponsorActions.createEl('a', {
+            href: 'https://buymeacoffee.com/ideo2004c',
+            cls: 'script-editor-sponsor-btn bmac-btn'
+        });
+        bmacLink.createEl('img', {
             attr: {
                 src: 'https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png',
                 style: 'height: 40px;'
             }
         });
+
+        const githubLink = sponsorActions.createEl('a', {
+            href: 'https://github.com/sponsors/ideo2004-afk',
+            cls: 'script-editor-sponsor-btn github-btn'
+        });
+        const githubIcon = githubLink.createDiv({ cls: 'github-sponsor-icon' });
+        githubIcon.innerHTML = SPONSOR_ICON;
+        githubLink.createSpan({ text: 'GitHub Sponsor' });
     }
 }
