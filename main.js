@@ -39,7 +39,7 @@ __export(main_exports, {
   default: () => ScriptEditorPlugin5
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian7 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 
 // node_modules/docx/dist/index.mjs
 var __defProp2 = Object.defineProperty;
@@ -19266,9 +19266,108 @@ var SceneView = class extends import_obsidian.ItemView {
 };
 
 // storyBoardView.ts
+var import_obsidian3 = require("obsidian");
+
+// ai.ts
 var import_obsidian2 = require("obsidian");
+var GeminiService = class {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+  }
+  async callGemini(prompt) {
+    var _a, _b, _c, _d, _e;
+    if (!this.apiKey) {
+      return { text: "", error: "API Key not set" };
+    }
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`;
+      const response = await (0, import_obsidian2.requestUrl)({
+        url,
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+      const data = response.json;
+      const text = ((_e = (_d = (_c = (_b = (_a = data.candidates) == null ? void 0 : _a[0]) == null ? void 0 : _b.content) == null ? void 0 : _c.parts) == null ? void 0 : _d[0]) == null ? void 0 : _e.text) || "";
+      if (!text) {
+        return { text: "", error: "Empty response from AI" };
+      }
+      return { text };
+    } catch (error) {
+      console.error("Gemini AI Error:", error);
+      return { text: "", error: error.message || "Request failed" };
+    }
+  }
+  /**
+   * Specialized prompt for generating a scene summary (Beat)
+   */
+  async generateSceneSummary(content) {
+    const prompt = `Act as a professional Hollywood screenwriter and script doctor. 
+Sumarize the following scene content into a concise BEAT.
+Requirements:
+1. Provide exactly ONE concise sentence summarising the scene.
+2. The summary MUST be in the same language and script (e.g., Traditional Chinese, English, Japanese) as the provided Scene Content.
+3. CRITICAL: If the input is in Traditional Chinese (\u7E41\u9AD4\u4E2D\u6587), you must respond in Traditional Chinese. Do NOT use Simplified Chinese (\u7C21\u9AD4\u4E2D\u6587).
+4. Do not include any other text, intros, explanations, or quotes.
+Format: Just the summary text.
+
+Scene Content:
+${content}`;
+    return this.callGemini(prompt);
+  }
+  /**
+   * Specialized prompt for generating a new scene from context
+   */
+  async generateNewScene(before, after) {
+    const prompt = `Act as a professional Hollywood screenwriter.
+Based on the surrounding scenes (Context Before and After), generate a LOGICAL and EVOCATIVE new scene to fill this gap.
+Requirements:
+1. Provide a Scene Heading.
+2. Provide a concise ONE-sentence summary of the new scene.
+3. Provide initial script content (Action/Dialogue) in standard screenplay format.
+4. ALL content (Heading, Summary, Script) MUST be in the same language and script as the provided Context.
+5. CRITICAL: If the input is in Traditional Chinese (\u7E41\u9AD4\u4E2D\u6587), you must respond in Traditional Chinese. Do NOT use Simplified Chinese (\u7C21\u9AD4\u4E2D\u6587).
+
+Format your response as:
+TITLE: [Heading]
+SUMMARY: [Summary text]
+CONTENT:
+[Initial Script lines]
+
+Context Before:
+${before}
+
+Context After:
+${after}`;
+    return this.callGemini(prompt);
+  }
+  /**
+   * Specialized prompt for bulk processing
+   */
+  async generateBulkSummaries(transcript) {
+    const prompt = `Act as a professional Hollywood screenwriter. 
+Below is a structured screenplay. 
+Some blocks are marked with (REQUEST_SUMMARY_FOR_THIS_BLOCK). 
+Please generate a concise ONE-sentence summary for each of those marked blocks.
+
+Requirements:
+1. Provide exactly ONE concise sentence per marked block.
+2. The summary MUST be in the same language and script as the block's content.
+3. CRITICAL: If the input is in Traditional Chinese (\u7E41\u9AD4\u4E2D\u6587), you must respond in Traditional Chinese. Do NOT use Simplified Chinese (\u7C21\u9AD4\u4E2D\u6587).
+4. Respond ONLY with a list of summaries in the following format:
+BLOCK X: Summary text
+
+Screenplay:
+${transcript}`;
+    return this.callGemini(prompt);
+  }
+};
+
+// storyBoardView.ts
 var STORYBOARD_VIEW_TYPE = "script-editor-storyboard-view";
-var StoryBoardView = class extends import_obsidian2.ItemView {
+var StoryBoardView = class extends import_obsidian3.ItemView {
   constructor(leaf) {
     super(leaf);
     this.file = null;
@@ -19289,7 +19388,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
   async setState(state2, result) {
     if (state2.file) {
       const file = this.app.vault.getAbstractFileByPath(state2.file);
-      if (file instanceof import_obsidian2.TFile) {
+      if (file instanceof import_obsidian3.TFile) {
         this.file = file;
       }
     }
@@ -19343,10 +19442,10 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     const bulkBtn = headerEl.createEl("button", {
       cls: "storyboard-bulk-ai-btn mod-cta"
     });
-    (0, import_obsidian2.setTooltip)(bulkBtn, "Analyze script and generate summaries for all scenes missing them.");
+    (0, import_obsidian3.setTooltip)(bulkBtn, "Analyze script and generate summaries for all scenes missing them.");
     const bulkBtnText = bulkBtn.createSpan({ text: "AI Beat Summary " });
     const bulkBtnIcon = bulkBtn.createSpan({ cls: "storyboard-bulk-ai-icon" });
-    (0, import_obsidian2.setIcon)(bulkBtnIcon, "sparkles");
+    (0, import_obsidian3.setIcon)(bulkBtnIcon, "sparkles");
     bulkBtn.onclick = () => this.runBulkAIBeat(blocks);
     const summaryLength = 50;
     const blocks = [];
@@ -19508,7 +19607,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
         const triggerMenu = (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const menu = new import_obsidian2.Menu();
+          const menu = new import_obsidian3.Menu();
           menu.addItem((item) => {
             item.setTitle("AI Beat").setIcon("sparkles").onClick(() => this.runAIBeat(blocks, blockIdx));
           });
@@ -19529,7 +19628,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           menu.showAtMouseEvent(e);
         };
         const menuBtn = cardEl.createDiv({ cls: "storyboard-card-menu-btn" });
-        (0, import_obsidian2.setIcon)(menuBtn, "menu");
+        (0, import_obsidian3.setIcon)(menuBtn, "menu");
         menuBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           triggerMenu(e);
@@ -19550,7 +19649,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
       state: { file: this.file.path }
     });
     const view = leaf.view;
-    if (view instanceof import_obsidian2.MarkdownView) {
+    if (view instanceof import_obsidian3.MarkdownView) {
       view.editor.setCursor({ line, ch: 0 });
       view.editor.focus();
       const linePos = view.editor.getCursor();
@@ -19597,8 +19696,9 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     const title = block.contentLines[0] || "";
     for (let i = 1; i < block.contentLines.length; i++) {
       const line = block.contentLines[i];
-      const summaryMatch = line.match(SUMMARY_REGEX);
-      const colorMatch = line.match(COLOR_TAG_REGEX);
+      const trimmedLine = line.trim();
+      const summaryMatch = trimmedLine.match(SUMMARY_REGEX);
+      const colorMatch = trimmedLine.match(COLOR_TAG_REGEX);
       if (summaryMatch) {
         existingSummary = summaryMatch[1];
       } else if (colorMatch) {
@@ -19714,108 +19814,69 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     });
   }
   async runAIBeat(blocks, blockIdx) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a;
     const settings = (_a = this.app.plugins.getPlugin("script-editor")) == null ? void 0 : _a.settings;
     const apiKey = settings == null ? void 0 : settings.geminiApiKey;
     if (!apiKey) {
-      new import_obsidian2.Notice("Please set your Gemini API Key in settings first.");
+      new import_obsidian3.Notice("Please set your Gemini API Key in settings first.");
       return;
     }
+    const gemini = new GeminiService(apiKey);
     const block = blocks[blockIdx];
     const content = block.contentLines.slice(1).join("\n").trim();
     const hasContent = content.length > 20;
-    new import_obsidian2.Notice(hasContent ? "Generating AI summary..." : "Generating new scene from context...");
-    let prompt = "";
+    new import_obsidian3.Notice(hasContent ? "Generating AI summary..." : "Generating new scene from context...");
+    let response;
     if (hasContent) {
-      prompt = `Act as a professional Hollywood screenwriter and script doctor. 
-Sumarize the following scene content into a concise BEAT.
-Requirements:
-1. Provide exactly ONE concise sentence summarising the scene.
-2. The summary MUST be in the same language and script (e.g., Traditional Chinese, English, Japanese) as the provided Scene Content.
-3. Do not include any other text, intros, or explanations.
-Format: [Summary]
-
-Scene Content:
-${content}`;
+      response = await gemini.generateSceneSummary(content);
     } else {
       const before = blocks.slice(Math.max(0, blockIdx - 5), blockIdx).map((b) => b.contentLines.join("\n")).join("\n---\n");
       const after = blocks.slice(blockIdx + 1, Math.min(blocks.length, blockIdx + 6)).map((b) => b.contentLines.join("\n")).join("\n---\n");
-      prompt = `Act as a professional Hollywood screenwriter.
-Based on the surrounding scenes (Context Before and After), generate a LOGICAL and EVOCATIVE new scene to fill this gap.
-Requirements:
-1. Provide a Scene Heading.
-2. Provide a concise ONE-sentence summary of the new scene.
-3. Provide initial script content (Action/Dialogue) in standard screenplay format.
-4. ALL content (Heading, Summary, Script) MUST be in the same language and script as the provided Context (e.g. if the context is Traditional Chinese, respond in Traditional Chinese).
-
-Format your response as:
-TITLE: [Heading]
-SUMMARY: [Summary]
-CONTENT:
-[Initial Script lines]
-
-Context Before:
-${before}
-
-Context After:
-${after}`;
+      response = await gemini.generateNewScene(before, after);
     }
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const response = await (0, import_obsidian2.requestUrl)({
-        url,
-        method: "POST",
-        contentType: "application/json",
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      });
-      const data = response.json;
-      const aiText = ((_f = (_e = (_d = (_c = (_b = data.candidates) == null ? void 0 : _b[0]) == null ? void 0 : _c.content) == null ? void 0 : _d.parts) == null ? void 0 : _e[0]) == null ? void 0 : _f.text) || "";
-      if (!aiText)
-        throw new Error("Empty response from AI");
-      if (hasContent) {
-        const cleanedText = aiText.trim().replace(/^Summary:\s*/i, "");
-        block.contentLines = block.contentLines.filter((l) => !SUMMARY_REGEX.test(l));
-        block.contentLines.splice(1, 0, `%%summary: ${cleanedText}%%`);
-      } else {
-        const titleMatch = aiText.match(/TITLE:\s*(.*)/i);
-        const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
-        const contentParts = aiText.split(/CONTENT:\s*/i);
-        const newTitle = titleMatch ? titleMatch[1].trim() : block.contentLines[0] || "INT. NEW SCENE - DAY";
-        const newSummary = summaryMatch ? summaryMatch[1].trim() : "";
-        const newContent = contentParts.length > 1 ? contentParts[1].trim() : "";
-        block.contentLines = [newTitle];
-        if (newSummary)
-          block.contentLines.push(`%%summary: ${newSummary}%%`);
-        if (newContent)
-          block.contentLines.push(...newContent.split("\n"));
-      }
-      const fullContent = blocks.map((b) => b.contentLines.join("\n")).join("\n");
-      if (this.file) {
-        await this.app.vault.modify(this.file, fullContent);
-        await this.updateView();
-        new import_obsidian2.Notice("AI Beat Generated!");
-      }
-    } catch (error) {
-      console.error("Gemini AI Error:", error);
-      new import_obsidian2.Notice("AI Generation failed. Check Console for details.");
+    if (response.error) {
+      new import_obsidian3.Notice(`AI Error: ${response.error}`);
+      return;
+    }
+    const aiText = response.text;
+    if (hasContent) {
+      const cleanedText = aiText.trim().replace(/^Summary:\s*/i, "").replace(/^\[|\]$/g, "").trim();
+      block.contentLines = block.contentLines.filter((l) => !SUMMARY_REGEX.test(l));
+      block.contentLines.splice(1, 0, `%%summary: ${cleanedText}%%`);
+    } else {
+      const titleMatch = aiText.match(/TITLE:\s*(.*)/i);
+      const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
+      const contentParts = aiText.split(/CONTENT:\s*/i);
+      const newTitle = titleMatch ? titleMatch[1].trim() : block.contentLines[0] || "INT. NEW SCENE - DAY";
+      const newSummary = summaryMatch ? summaryMatch[1].trim() : "";
+      const newContent = contentParts.length > 1 ? contentParts[1].trim() : "";
+      block.contentLines = [newTitle];
+      if (newSummary)
+        block.contentLines.push(`%%summary: ${newSummary}%%`);
+      if (newContent)
+        block.contentLines.push(...newContent.split("\n"));
+    }
+    const fullContent = blocks.map((b) => b.contentLines.join("\n")).join("\n");
+    if (this.file) {
+      await this.app.vault.modify(this.file, fullContent);
+      await this.updateView();
+      new import_obsidian3.Notice("AI Beat Generated!");
     }
   }
   async runBulkAIBeat(blocks) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a;
     const settings = (_a = this.app.plugins.getPlugin("script-editor")) == null ? void 0 : _a.settings;
     const apiKey = settings == null ? void 0 : settings.geminiApiKey;
     if (!apiKey) {
-      new import_obsidian2.Notice("Please set your Gemini API Key in settings first.");
+      new import_obsidian3.Notice("Please set your Gemini API Key in settings first.");
       return;
     }
     const scenesToProcess = blocks.slice(1).filter((b) => b.type === "scene" && !b.summary);
     if (scenesToProcess.length === 0) {
-      new import_obsidian2.Notice("All scenes already have summaries!");
+      new import_obsidian3.Notice("All scenes already have summaries!");
       return;
     }
-    new import_obsidian2.Notice(`\u{1F916} AI is analyzing ${scenesToProcess.length} scenes. Please wait...`);
+    new import_obsidian3.Notice(`\u{1F916} AI is analyzing ${scenesToProcess.length} scenes. Please wait...`);
     const transcript = blocks.map((b, idx) => {
       let text = `[BLOCK ${idx}] ${b.title}
 ${b.contentLines.slice(1).join("\n")}`;
@@ -19825,61 +19886,36 @@ ${b.contentLines.slice(1).join("\n")}`;
       }
       return text;
     }).join("\n\n---\n\n");
-    const prompt = `Act as a professional Hollywood screenwriter. 
-Below is a structured screenplay. 
-Some blocks are marked with (REQUEST_SUMMARY_FOR_THIS_BLOCK). 
-Please generate a concise ONE-sentence summary for each of those marked blocks.
-
-Requirements:
-1. Provide exactly ONE concise sentence per marked block.
-2. The summary MUST be in the same language and script (e.g., Traditional Chinese, English) as the block's content.
-3. Respond ONLY with a list of summaries in the following format:
-BLOCK X: [Summary]
-
-Screenplay:
-${transcript}`;
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const response = await (0, import_obsidian2.requestUrl)({
-        url,
-        method: "POST",
-        contentType: "application/json",
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      });
-      const data = response.json;
-      const aiText = ((_f = (_e = (_d = (_c = (_b = data.candidates) == null ? void 0 : _b[0]) == null ? void 0 : _c.content) == null ? void 0 : _d.parts) == null ? void 0 : _e[0]) == null ? void 0 : _f.text) || "";
-      if (!aiText)
-        throw new Error("Empty response from AI");
-      const lines = aiText.split("\n");
-      let successCount = 0;
-      lines.forEach((line) => {
-        const match = line.match(/BLOCK\s+(\d+):\s*(.*)/i);
-        if (match) {
-          const idx = parseInt(match[1]);
-          const summary = match[2].trim();
-          if (blocks[idx] && blocks[idx].type === "scene") {
-            blocks[idx].contentLines = blocks[idx].contentLines.filter((l) => !SUMMARY_REGEX.test(l));
-            blocks[idx].contentLines.splice(1, 0, `%%summary: ${summary}%%`);
-            successCount++;
-          }
+    const gemini = new GeminiService(apiKey);
+    const response = await gemini.generateBulkSummaries(transcript);
+    if (response.error) {
+      new import_obsidian3.Notice(`Batch AI Error: ${response.error}`);
+      return;
+    }
+    const aiText = response.text;
+    const lines = aiText.split("\n");
+    let successCount = 0;
+    lines.forEach((line) => {
+      const match = line.match(/BLOCK\s+(\d+):\s*(.*)/i);
+      if (match) {
+        const idx = parseInt(match[1]);
+        const summary = match[2].trim();
+        if (blocks[idx] && blocks[idx].type === "scene") {
+          blocks[idx].contentLines = blocks[idx].contentLines.filter((l) => !SUMMARY_REGEX.test(l));
+          blocks[idx].contentLines.splice(1, 0, `%%summary: ${summary}%%`);
+          successCount++;
         }
-      });
-      if (successCount > 0) {
-        const finalFullContent = blocks.map((b) => b.contentLines.join("\n")).join("\n");
-        if (this.file) {
-          await this.app.vault.modify(this.file, finalFullContent);
-          await this.updateView();
-          new import_obsidian2.Notice(`\u2728 Batch Complete! Generated ${successCount} summaries.`);
-        }
-      } else {
-        new import_obsidian2.Notice("AI process finished but no summaries could be parsed. Check developer console.");
-        console.debug("AI Response was:", aiText);
       }
-    } catch (error) {
-      console.error("Gemini Bulk Error:", error);
-      new import_obsidian2.Notice("Batch AI failed. See console.");
+    });
+    if (successCount > 0) {
+      const finalFullContent = blocks.map((b) => b.contentLines.join("\n")).join("\n");
+      if (this.file) {
+        await this.app.vault.modify(this.file, finalFullContent);
+        await this.updateView();
+        new import_obsidian3.Notice(`\u2728 Batch Complete! Generated ${successCount} summaries.`);
+      }
+    } else {
+      new import_obsidian3.Notice("AI process finished but no summaries could be parsed.");
     }
   }
 };
@@ -19937,7 +19973,7 @@ function registerReadingView(plugin) {
 // editorExtension.ts
 var import_state = require("@codemirror/state");
 var import_view = require("@codemirror/view");
-var import_obsidian3 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 function livePreviewExtension(plugin) {
   return import_view.ViewPlugin.fromClass(class {
     constructor(view) {
@@ -19953,7 +19989,7 @@ function livePreviewExtension(plugin) {
       const isScript = view.dom.closest(".fountain") || view.dom.closest(".script");
       if (!isScript)
         return builder.finish();
-      const isLivePreview = view.state.field(import_obsidian3.editorLivePreviewField);
+      const isLivePreview = view.state.field(import_obsidian4.editorLivePreviewField);
       if (!isLivePreview)
         return builder.finish();
       const selection = view.state.selection;
@@ -20052,13 +20088,13 @@ function livePreviewExtension(plugin) {
 }
 
 // settings.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 var DEFAULT_SETTINGS = {
   mySetting: "default",
   geminiApiKey: ""
 };
 var SPONSOR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
-var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
+var ScriptEditorSettingTab = class extends import_obsidian5.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -20066,19 +20102,19 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian4.Setting(containerEl).setName("Usage guide").setHeading();
-    new import_obsidian4.Setting(containerEl).setName("AI Beat summary (Gemini 2.5 Flash)").setDesc("Get your API key from Google AI Studio.").addText((text) => text.setPlaceholder("Enter your Gemini API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
+    new import_obsidian5.Setting(containerEl).setName("Usage guide").setHeading();
+    new import_obsidian5.Setting(containerEl).setName("AI Beat summary (Gemini 2.5 Flash)").setDesc("Get your API key from Google AI Studio.").addText((text) => text.setPlaceholder("Enter your Gemini API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
       this.plugin.settings.geminiApiKey = value.trim();
       await this.plugin.saveSettings();
     }).inputEl.style.width = "350px");
-    new import_obsidian4.Setting(containerEl).setName("Quick features").setDesc("Automation and creation tools.").setHeading();
+    new import_obsidian5.Setting(containerEl).setName("Quick features").setDesc("Automation and creation tools.").setHeading();
     const featuresDiv = containerEl.createDiv();
     featuresDiv.createEl("li", { text: "New Script Button: Click the scroll icon in the left ribbon to create a new screenplay." });
     featuresDiv.createEl("li", { text: "Story Board Mode: Activate the grid icon in the right sidebar for a holistic view of script structure." });
     featuresDiv.createEl("li", { text: "AI Beat Summary: Instantly generate scene summaries using Gemini AI." });
     featuresDiv.createEl("li", { text: "Character Quick Menu: Type @ to access frequently used character names." });
     featuresDiv.createEl("li", { text: "Renumber Scenes: Right-click in the editor to re-order your scene numbers automatically." });
-    new import_obsidian4.Setting(containerEl).setName("Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
+    new import_obsidian5.Setting(containerEl).setName("Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
     const syntaxDiv = containerEl.createDiv();
     syntaxDiv.createEl("li", { text: "Scene Heading: INT. / EXT. \u2014 Automatic bold & uppercase." });
     syntaxDiv.createEl("li", { text: 'Character: @NAME \u2014 Centered. "@" is hidden in preview.' });
@@ -20109,7 +20145,7 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
 };
 
 // menus.ts
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 function registerMenus(plugin) {
   const { app } = plugin;
   plugin.addRibbonIcon("scroll-text", "New script", async () => {
@@ -20131,7 +20167,7 @@ function registerMenus(plugin) {
     id: "export-to-docx",
     name: "Export current script to .docx",
     checkCallback: (checking) => {
-      const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+      const view = app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView);
       if (view && plugin.isScript(view.file)) {
         if (!checking) {
           void exportFileToDocx(plugin, view.file);
@@ -20145,7 +20181,7 @@ function registerMenus(plugin) {
     id: "open-story-board",
     name: "Open story board for current script",
     checkCallback: (checking) => {
-      const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+      const view = app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView);
       if (view && plugin.isScript(view.file)) {
         if (!checking) {
           void plugin.openStoryBoard(view.leaf, view.file);
@@ -20166,7 +20202,7 @@ function registerMenus(plugin) {
     id: "export-summary",
     name: "Export scene summaries to .md",
     checkCallback: (checking) => {
-      const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+      const view = app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView);
       if (view && plugin.isScript(view.file)) {
         if (!checking) {
           void exportSummary(plugin, view.file);
@@ -20223,7 +20259,7 @@ function registerMenus(plugin) {
   );
   plugin.registerEvent(
     app.workspace.on("view-actions-menu", (menu, view) => {
-      if (view instanceof import_obsidian5.MarkdownView && plugin.isScript(view.file)) {
+      if (view instanceof import_obsidian6.MarkdownView && plugin.isScript(view.file)) {
         menu.addItem((item) => {
           item.setTitle("Open Story Board").setIcon("layout-grid").onClick(() => {
             void plugin.openStoryBoard(view.leaf, view.file);
@@ -20234,7 +20270,7 @@ function registerMenus(plugin) {
   );
   plugin.registerEvent(
     app.workspace.on("file-menu", (menu, file) => {
-      if (file instanceof import_obsidian5.TFile && file.extension === "md") {
+      if (file instanceof import_obsidian6.TFile && file.extension === "md") {
         if (plugin.isScript(file)) {
           menu.addItem((item) => {
             item.setTitle("Export to .docx").setIcon("file-output").onClick(async () => {
@@ -20252,9 +20288,9 @@ function registerMenus(plugin) {
         item.setTitle("New script").setIcon("scroll-text").onClick(async () => {
           var _a;
           let folderPath = "/";
-          if (file instanceof import_obsidian5.TFolder) {
+          if (file instanceof import_obsidian6.TFolder) {
             folderPath = file.path;
-          } else if (file instanceof import_obsidian5.TFile) {
+          } else if (file instanceof import_obsidian6.TFile) {
             folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
           }
           await createNewScript(plugin, folderPath);
@@ -20264,7 +20300,7 @@ function registerMenus(plugin) {
   );
   plugin.registerEvent(
     app.workspace.on("file-open", (file) => {
-      const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+      const view = app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView);
       if (view) {
         const headerActions = view.containerEl.querySelector(".view-actions");
         const existingBtn = headerActions == null ? void 0 : headerActions.querySelector(".script-editor-storyboard-action");
@@ -20288,7 +20324,7 @@ function registerMenus(plugin) {
   );
 }
 function addMenuItem(menu, title, icon, editor, marker, plugin) {
-  if (menu instanceof import_obsidian5.Menu) {
+  if (menu instanceof import_obsidian6.Menu) {
     menu.addItem((item) => {
       item.setTitle(title).setIcon(icon).onClick(() => toggleLinePrefix(plugin, editor, marker));
     });
@@ -20357,14 +20393,14 @@ async function exportFileToDocx(plugin, file) {
     const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
     const fileName = `${baseName}.docx`;
     const filePath = folderPath === "/" ? fileName : `${folderPath}/${fileName}`;
-    new import_obsidian5.Notice(`Exporting ${fileName}...`);
+    new import_obsidian6.Notice(`Exporting ${fileName}...`);
     const buffer2 = await DocxExporter.exportToDocx(content, baseName);
     const arrayBuffer = buffer2.buffer.slice(buffer2.byteOffset, buffer2.byteOffset + buffer2.byteLength);
     await plugin.app.vault.adapter.writeBinary(filePath, arrayBuffer);
-    new import_obsidian5.Notice(`Successfully exported to ${baseName}.docx`);
+    new import_obsidian6.Notice(`Successfully exported to ${baseName}.docx`);
   } catch (error) {
     console.error("Export to DOCX failed:", error);
-    new import_obsidian5.Notice(`Failed to export to DOCX: ${error.message}`);
+    new import_obsidian6.Notice(`Failed to export to DOCX: ${error.message}`);
   }
 }
 async function exportSummary(plugin, file) {
@@ -20402,25 +20438,25 @@ async function exportSummary(plugin, file) {
       }
     });
     if (summaryLines.length === 0) {
-      new import_obsidian5.Notice("No scenes with summaries found in the script.");
+      new import_obsidian6.Notice("No scenes with summaries found in the script.");
       return;
     }
     const finalContent = summaryLines.join("\n");
     const existingFile = plugin.app.vault.getAbstractFileByPath(summaryFilePath);
-    if (existingFile instanceof import_obsidian5.TFile) {
+    if (existingFile instanceof import_obsidian6.TFile) {
       await plugin.app.vault.modify(existingFile, finalContent);
     } else {
       await plugin.app.vault.create(summaryFilePath, finalContent);
     }
-    new import_obsidian5.Notice(`Successfully exported summary to ${summaryFileName}`);
+    new import_obsidian6.Notice(`Successfully exported summary to ${summaryFileName}`);
     const newFile = plugin.app.vault.getAbstractFileByPath(summaryFilePath);
-    if (newFile instanceof import_obsidian5.TFile) {
+    if (newFile instanceof import_obsidian6.TFile) {
       const leaf = plugin.app.workspace.getLeaf(false);
       await leaf.openFile(newFile);
     }
   } catch (error) {
     console.error("Export summary failed:", error);
-    new import_obsidian5.Notice(`Failed to export summary: ${error.message}`);
+    new import_obsidian6.Notice(`Failed to export summary: ${error.message}`);
   }
 }
 async function createNewScript(plugin, folderPath) {
@@ -20493,7 +20529,7 @@ MARY:
 You can make it.
 `;
   const templateFile = plugin.app.vault.getAbstractFileByPath("Script Templet.md");
-  if (templateFile instanceof import_obsidian5.TFile) {
+  if (templateFile instanceof import_obsidian6.TFile) {
     fileContent = await plugin.app.vault.read(templateFile);
   }
   const newFile = await plugin.app.vault.create(filePath, fileContent);
@@ -20503,7 +20539,7 @@ You can make it.
 }
 
 // suggest.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 function extractCharacterNames(content, plugin) {
   const charCounts = /* @__PURE__ */ new Map();
   const lines = content.split("\n");
@@ -20531,7 +20567,7 @@ function extractCharacterNames(content, plugin) {
   });
   return charCounts;
 }
-var CharacterSuggest = class extends import_obsidian6.EditorSuggest {
+var CharacterSuggest = class extends import_obsidian7.EditorSuggest {
   constructor(app, plugin) {
     super(app);
     this.plugin = plugin;
@@ -20599,7 +20635,7 @@ var LP_CLASSES = {
   NOTE: "lp-note",
   SYMBOL: "lp-marker-symbol"
 };
-var ScriptEditorPlugin5 = class extends import_obsidian7.Plugin {
+var ScriptEditorPlugin5 = class extends import_obsidian8.Plugin {
   constructor() {
     super(...arguments);
     this.lastActiveFile = null;

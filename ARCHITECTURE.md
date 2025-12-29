@@ -39,7 +39,12 @@ This document outlines the modular structure of the Script Editor Obsidian plugi
 ### [storyBoardView.ts](storyBoardView.ts)
 **Visual Narrative Planning.**
 - **Grid Layout**: Provides a drag-and-drop card interface for viewing the script as a storyboard.
-- **AI Beat Summary**: Integrates with Gemini AI to generate scene summaries.
+- **AI Integration**: Triggers AI analysis for scene summaries and gap filling, utilizing the shared `ai.ts` service.
+
+### [ai.ts](ai.ts)
+**Shared AI Services.**
+- **Gemini Integration**: Houses the `GeminiService` class for interacting with the Google Gemini API.
+- **Shared Prompts**: Centralizes prompts for scene summarization (Beats), scene generation, and bulk processing, making them available across the plugin.
 
 ### [sceneView.ts](sceneView.ts)
 **Sidebar Navigation.**

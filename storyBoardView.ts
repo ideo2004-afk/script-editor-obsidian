@@ -1,5 +1,6 @@
 import { ItemView, WorkspaceLeaf, TFile, MarkdownView, Menu, setIcon, requestUrl, Notice, setTooltip } from "obsidian";
 import { SCENE_REGEX, COLOR_TAG_REGEX, SUMMARY_REGEX, NOTE_REGEX } from "./main";
+import { GeminiService } from "./ai";
 
 export const STORYBOARD_VIEW_TYPE = "script-editor-storyboard-view";
 
@@ -444,8 +445,9 @@ export class StoryBoardView extends ItemView {
 
         for (let i = 1; i < block.contentLines.length; i++) {
             const line = block.contentLines[i];
-            const summaryMatch = line.match(SUMMARY_REGEX);
-            const colorMatch = line.match(COLOR_TAG_REGEX);
+            const trimmedLine = line.trim();
+            const summaryMatch = trimmedLine.match(SUMMARY_REGEX);
+            const colorMatch = trimmedLine.match(COLOR_TAG_REGEX);
             if (summaryMatch) {
                 existingSummary = summaryMatch[1];
             } else if (colorMatch) {
@@ -602,101 +604,56 @@ export class StoryBoardView extends ItemView {
             return;
         }
 
+        const gemini = new GeminiService(apiKey);
         const block = blocks[blockIdx];
         const content = block.contentLines.slice(1).join('\n').trim();
-        const hasContent = content.length > 20; // Heuristic for if there's real content
+        const hasContent = content.length > 20;
 
         new Notice(hasContent ? "Generating AI summary..." : "Generating new scene from context...");
 
-        let prompt = "";
+        let response;
         if (hasContent) {
-            // Case A: Summary
-            prompt = `Act as a professional Hollywood screenwriter and script doctor. 
-Sumarize the following scene content into a concise BEAT.
-Requirements:
-1. Provide exactly ONE concise sentence summarising the scene.
-2. The summary MUST be in the same language and script (e.g., Traditional Chinese, English, Japanese) as the provided Scene Content.
-3. Do not include any other text, intros, or explanations.
-Format: [Summary]
-
-Scene Content:
-${content}`;
+            response = await gemini.generateSceneSummary(content);
         } else {
-            // Case B: Generation from context
             const before = blocks.slice(Math.max(0, blockIdx - 5), blockIdx).map(b => b.contentLines.join('\n')).join('\n---\n');
             const after = blocks.slice(blockIdx + 1, Math.min(blocks.length, blockIdx + 6)).map(b => b.contentLines.join('\n')).join('\n---\n');
-
-            prompt = `Act as a professional Hollywood screenwriter.
-Based on the surrounding scenes (Context Before and After), generate a LOGICAL and EVOCATIVE new scene to fill this gap.
-Requirements:
-1. Provide a Scene Heading.
-2. Provide a concise ONE-sentence summary of the new scene.
-3. Provide initial script content (Action/Dialogue) in standard screenplay format.
-4. ALL content (Heading, Summary, Script) MUST be in the same language and script as the provided Context (e.g. if the context is Traditional Chinese, respond in Traditional Chinese).
-
-Format your response as:
-TITLE: [Heading]
-SUMMARY: [Summary]
-CONTENT:
-[Initial Script lines]
-
-Context Before:
-${before}
-
-Context After:
-${after}`;
+            response = await gemini.generateNewScene(before, after);
         }
 
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-            const response = await requestUrl({
-                url: url,
-                method: 'POST',
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
+        if (response.error) {
+            new Notice(`AI Error: ${response.error}`);
+            return;
+        }
 
-            const data = response.json;
-            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const aiText = response.text;
 
-            if (!aiText) throw new Error("Empty response from AI");
+        if (hasContent) {
+            // Apply summary to existing block
+            const cleanedText = aiText.trim()
+                .replace(/^Summary:\s*/i, '')
+                .replace(/^\[|\]$/g, '') // Strip leading/trailing brackets
+                .trim();
+            block.contentLines = block.contentLines.filter((l: string) => !SUMMARY_REGEX.test(l));
+            block.contentLines.splice(1, 0, `%%summary: ${cleanedText}%%`);
+        } else {
+            const titleMatch = aiText.match(/TITLE:\s*(.*)/i);
+            const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
+            const contentParts = aiText.split(/CONTENT:\s*/i);
 
-            if (hasContent) {
-                // Apply summary to existing block
-                const cleanedText = aiText.trim().replace(/^Summary:\s*/i, '');
+            const newTitle = titleMatch ? titleMatch[1].trim() : (block.contentLines[0] || "INT. NEW SCENE - DAY");
+            const newSummary = summaryMatch ? summaryMatch[1].trim() : "";
+            const newContent = contentParts.length > 1 ? contentParts[1].trim() : "";
 
-                // Remove old summary tags
-                block.contentLines = block.contentLines.filter((l: string) => !SUMMARY_REGEX.test(l));
-                // Insert new summary tag after title
-                block.contentLines.splice(1, 0, `%%summary: ${cleanedText}%%`);
-            } else {
-                // Parse generated scene
-                const titleMatch = aiText.match(/TITLE:\s*(.*)/i);
-                const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
-                const contentParts = aiText.split(/CONTENT:\s*/i);
+            block.contentLines = [newTitle];
+            if (newSummary) block.contentLines.push(`%%summary: ${newSummary}%%`);
+            if (newContent) block.contentLines.push(...newContent.split('\n'));
+        }
 
-                const newTitle = titleMatch ? titleMatch[1].trim() : (block.contentLines[0] || "INT. NEW SCENE - DAY");
-                const newSummary = summaryMatch ? summaryMatch[1].trim() : "";
-                const newContent = contentParts.length > 1 ? contentParts[1].trim() : "";
-
-                block.contentLines = [newTitle];
-                if (newSummary) block.contentLines.push(`%%summary: ${newSummary}%%`);
-                if (newContent) block.contentLines.push(...newContent.split('\n'));
-            }
-
-            // Save and update
-            const fullContent = blocks.map(b => b.contentLines.join('\n')).join('\n');
-            if (this.file) {
-                await this.app.vault.modify(this.file, fullContent);
-                await this.updateView();
-                new Notice("AI Beat Generated!");
-            }
-
-        } catch (error) {
-            console.error("Gemini AI Error:", error);
-            new Notice("AI Generation failed. Check Console for details.");
+        const fullContent = blocks.map(b => b.contentLines.join('\n')).join('\n');
+        if (this.file) {
+            await this.app.vault.modify(this.file, fullContent);
+            await this.updateView();
+            new Notice("AI Beat Generated!");
         }
     }
 
@@ -717,7 +674,6 @@ ${after}`;
 
         new Notice(`🤖 AI is analyzing ${scenesToProcess.length} scenes. Please wait...`);
 
-        // Build a transcript of the whole script to give full context
         const transcript = blocks.map((b, idx) => {
             let text = `[BLOCK ${idx}] ${b.title}\n${b.contentLines.slice(1).join('\n')}`;
             if (b.type === 'scene' && !b.summary) {
@@ -726,73 +682,41 @@ ${after}`;
             return text;
         }).join('\n\n---\n\n');
 
-        const prompt = `Act as a professional Hollywood screenwriter. 
-Below is a structured screenplay. 
-Some blocks are marked with (REQUEST_SUMMARY_FOR_THIS_BLOCK). 
-Please generate a concise ONE-sentence summary for each of those marked blocks.
+        const gemini = new GeminiService(apiKey);
+        const response = await gemini.generateBulkSummaries(transcript);
 
-Requirements:
-1. Provide exactly ONE concise sentence per marked block.
-2. The summary MUST be in the same language and script (e.g., Traditional Chinese, English) as the block's content.
-3. Respond ONLY with a list of summaries in the following format:
-BLOCK X: [Summary]
+        if (response.error) {
+            new Notice(`Batch AI Error: ${response.error}`);
+            return;
+        }
 
-Screenplay:
-${transcript}`;
+        const aiText = response.text;
 
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-            const response = await requestUrl({
-                url: url,
-                method: 'POST',
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
+        const lines = aiText.split('\n');
+        let successCount = 0;
 
-            const data = response.json;
-            const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-            if (!aiText) throw new Error("Empty response from AI");
-
-            // Parse lines like "BLOCK 5: summary text"
-            const lines = aiText.split('\n');
-            let successCount = 0;
-
-            lines.forEach((line: string) => {
-                const match = line.match(/BLOCK\s+(\d+):\s*(.*)/i);
-                if (match) {
-                    const idx = parseInt(match[1]);
-                    const summary = match[2].trim();
-                    if (blocks[idx] && blocks[idx].type === 'scene') {
-                        // Double check if it already had one during this session? 
-                        // No, we use our current memory array 'blocks'
-
-                        // Clear existing summary tags if any (rare since we filtered for !b.summary)
-                        blocks[idx].contentLines = blocks[idx].contentLines.filter((l: string) => !SUMMARY_REGEX.test(l));
-                        // Insert new summary tag after title line
-                        blocks[idx].contentLines.splice(1, 0, `%%summary: ${summary}%%`);
-                        successCount++;
-                    }
+        lines.forEach((line: string) => {
+            const match = line.match(/BLOCK\s+(\d+):\s*(.*)/i);
+            if (match) {
+                const idx = parseInt(match[1]);
+                const summary = match[2].trim();
+                if (blocks[idx] && blocks[idx].type === 'scene') {
+                    blocks[idx].contentLines = blocks[idx].contentLines.filter((l: string) => !SUMMARY_REGEX.test(l));
+                    blocks[idx].contentLines.splice(1, 0, `%%summary: ${summary}%%`);
+                    successCount++;
                 }
-            });
-
-            if (successCount > 0) {
-                const finalFullContent = blocks.map(b => b.contentLines.join('\n')).join('\n');
-                if (this.file) {
-                    await this.app.vault.modify(this.file, finalFullContent);
-                    await this.updateView();
-                    new Notice(`✨ Batch Complete! Generated ${successCount} summaries.`);
-                }
-            } else {
-                new Notice("AI process finished but no summaries could be parsed. Check developer console.");
-                console.debug("AI Response was:", aiText);
             }
+        });
 
-        } catch (error) {
-            console.error("Gemini Bulk Error:", error);
-            new Notice("Batch AI failed. See console.");
+        if (successCount > 0) {
+            const finalFullContent = blocks.map(b => b.contentLines.join('\n')).join('\n');
+            if (this.file) {
+                await this.app.vault.modify(this.file, finalFullContent);
+                await this.updateView();
+                new Notice(`✨ Batch Complete! Generated ${successCount} summaries.`);
+            }
+        } else {
+            new Notice("AI process finished but no summaries could be parsed.");
         }
     }
 }
