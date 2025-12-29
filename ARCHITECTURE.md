@@ -34,6 +34,20 @@ This document outlines the modular structure of the Script Editor Obsidian plugi
 - **CodeMirror 6 Extension**: Uses `ViewPlugin` and `Decoration` to apply real-time styles (centering, bolding, colors) while editing.
 - **Modular Styling**: Keeps editor-heavy logic separate from the core plugin file.
 
+### [storyBoardView.ts](storyBoardView.ts)
+**Visual Narrative Planning.**
+- **Grid Layout**: Provides a drag-and-drop card interface for viewing the script as a storyboard.
+- **AI Beat Summary**: Integrates with Gemini AI to generate scene summaries.
+
+### [sceneView.ts](sceneView.ts)
+**Sidebar Navigation.**
+- **Scene List**: Provides an outline of all scenes in the current script for quick navigation.
+- **Auto-Sync**: Updates automatically as scenes are added or renumbered in the editor.
+
+### [docxExporter.ts](docxExporter.ts)
+**Export Engine.**
+- **Office Processing**: Handles the conversion of script formatting into standard industry-compliant Word documents.
+
 ---
 
 ## Shared Utility Flows
