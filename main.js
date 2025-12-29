@@ -20331,7 +20331,6 @@ var ScriptEditorPlugin4 = class extends import_obsidian6.Plugin {
     );
     await this.loadSettings();
     this.addSettingTab(new ScriptEditorSettingTab(this.app, this));
-    registerMenus(this);
     registerReadingView(this);
     this.registerEditorExtension(livePreviewExtension(this));
     this.registerEvent(
@@ -20365,6 +20364,7 @@ var ScriptEditorPlugin4 = class extends import_obsidian6.Plugin {
     this.app.workspace.onLayoutReady(async () => {
       await this.initSceneView();
     });
+    this.registerEditorSuggest(new CharacterSuggest(this.app, this));
   }
   async initSceneView() {
     if (this.app.workspace.getLeavesOfType(SCENE_VIEW_TYPE).length > 0) {
@@ -20684,6 +20684,69 @@ You can make it.
   }
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+};
+function extractCharacterNames(content, plugin) {
+  const charCounts = /* @__PURE__ */ new Map();
+  const lines = content.split("\n");
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.length > 50)
+      return;
+    const format = plugin.detectExplicitFormat(trimmed);
+    if (!format || format.typeKey !== "CHARACTER")
+      return;
+    let name = "";
+    if (trimmed.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+      name = trimmed.substring(1).trim();
+    } else if (CHARACTER_COLON_REGEX.test(trimmed)) {
+      const match = trimmed.match(CHARACTER_COLON_REGEX);
+      if (match)
+        name = match[1].trim();
+    } else if (CHARACTER_CAPS_REGEX2.test(trimmed)) {
+      name = trimmed.split("(")[0].trim();
+    }
+    name = name.replace(/[:：]+$/, "").trim();
+    if (name && name.length > 0) {
+      charCounts.set(name, (charCounts.get(name) || 0) + 1);
+    }
+  });
+  return charCounts;
+}
+var CharacterSuggest = class extends import_obsidian6.EditorSuggest {
+  constructor(app, plugin) {
+    super(app);
+    this.plugin = plugin;
+  }
+  onTrigger(cursor, editor, file) {
+    if (!this.plugin.isScript(file))
+      return null;
+    const line = editor.getLine(cursor.line);
+    const sub = line.substring(0, cursor.ch);
+    const match = sub.match(/@([^ ]*)$/);
+    if (match) {
+      return {
+        start: { line: cursor.line, ch: match.index },
+        end: { line: cursor.line, ch: cursor.ch },
+        query: match[1]
+      };
+    }
+    return null;
+  }
+  async getSuggestions(context) {
+    const content = await this.app.vault.read(context.file);
+    const charMap = extractCharacterNames(content, this.plugin);
+    const query = context.query.toLowerCase();
+    return Array.from(charMap.entries()).filter(([name]) => name.toLowerCase().includes(query)).sort((a, b) => b[1] - a[1]).map(([name]) => name).slice(0, 10);
+  }
+  renderSuggestion(suggestion, el) {
+    el.createEl("div", { text: suggestion });
+  }
+  selectSuggestion(suggestion, event) {
+    const { context } = this;
+    if (context) {
+      context.editor.replaceRange(`@${suggestion}`, context.start, context.end);
+    }
   }
 };
 /*! Bundled license information:

@@ -70,12 +70,10 @@ export default class ScriptEditorPlugin extends Plugin {
             (leaf) => new StoryBoardView(leaf)
         );
 
+
         // 2. Settings / Help Tab
         await this.loadSettings();
         this.addSettingTab(new ScriptEditorSettingTab(this.app, this));
-
-        // 2. UI Components (Commands, Ribbon, Menus)
-        registerMenus(this);
 
         // 3. Post Processor (Reading Mode & PDF)
         registerReadingView(this);
@@ -129,6 +127,9 @@ export default class ScriptEditorPlugin extends Plugin {
         this.app.workspace.onLayoutReady(async () => {
             await this.initSceneView();
         });
+
+        // 8. Register Character Suggest (Editor Logic)
+        this.registerEditorSuggest(new CharacterSuggest(this.app, this));
     }
     async initSceneView() {
         if (this.app.workspace.getLeavesOfType(SCENE_VIEW_TYPE).length > 0) {
