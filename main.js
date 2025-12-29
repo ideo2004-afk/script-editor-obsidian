@@ -36,10 +36,10 @@ __export(main_exports, {
   SCRIPT_MARKERS: () => SCRIPT_MARKERS,
   SUMMARY_REGEX: () => SUMMARY_REGEX,
   TRANSITION_REGEX: () => TRANSITION_REGEX,
-  default: () => ScriptEditorPlugin3
+  default: () => ScriptEditorPlugin4
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
 // node_modules/docx/dist/index.mjs
 var __defProp2 = Object.defineProperty;
@@ -20096,6 +20096,193 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
   }
 };
 
+// menus.ts
+var import_obsidian5 = require("obsidian");
+function registerMenus(plugin) {
+  const { app } = plugin;
+  plugin.addRibbonIcon("scroll-text", "New script", async () => {
+    await plugin.createNewScript();
+  });
+  plugin.addCommand({
+    id: "renumber-scenes",
+    name: "Renumber scenes",
+    editorCallback: (editor) => plugin.renumberScenes(editor)
+  });
+  plugin.addCommand({
+    id: "create-new-script",
+    name: "Create new script",
+    callback: async () => {
+      await plugin.createNewScript();
+    }
+  });
+  plugin.addCommand({
+    id: "export-to-docx",
+    name: "Export current script to .docx",
+    checkCallback: (checking) => {
+      const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+      if (view && plugin.isScript(view.file)) {
+        if (!checking) {
+          void plugin.exportFileToDocx(view.file);
+        }
+        return true;
+      }
+      return false;
+    }
+  });
+  plugin.addCommand({
+    id: "open-story-board",
+    name: "Open story board for current script",
+    checkCallback: (checking) => {
+      const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+      if (view && plugin.isScript(view.file)) {
+        if (!checking) {
+          void plugin.openStoryBoard(view.leaf, view.file);
+        }
+        return true;
+      }
+      return false;
+    }
+  });
+  plugin.addCommand({
+    id: "show-scene-mode",
+    name: "Show scene mode",
+    callback: async () => {
+      await plugin.activateView();
+    }
+  });
+  plugin.addCommand({
+    id: "export-summary",
+    name: "Export scene summaries to .md",
+    checkCallback: (checking) => {
+      const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+      if (view && plugin.isScript(view.file)) {
+        if (!checking) {
+          void plugin.exportSummary(view.file);
+        }
+        return true;
+      }
+      return false;
+    }
+  });
+  plugin.registerEvent(
+    app.workspace.on("editor-menu", (menu, editor, view) => {
+      if (!plugin.isScript(view.file))
+        return;
+      menu.addItem((item) => {
+        item.setTitle("Script Editor").setIcon("film");
+        const subMenu = item.setSubmenu();
+        subMenu.addItem((startItem) => {
+          startItem.setTitle("Scene heading").setIcon("clapperboard");
+          const sceneMenu = startItem.setSubmenu();
+          sceneMenu.addItem((i) => i.setTitle("EXT.").onClick(() => plugin.insertText(editor, "EXT. ", false)));
+          sceneMenu.addItem((i) => i.setTitle("INT.").onClick(() => plugin.insertText(editor, "INT. ", false)));
+          sceneMenu.addItem((i) => i.setTitle("I/E.").onClick(() => plugin.insertText(editor, "INT./EXT. ", false)));
+        });
+        addMenuItem(subMenu, "Character (@)", "user", editor, SCRIPT_MARKERS.CHARACTER, plugin);
+        addMenuItem(subMenu, "Parenthetical ( ( )", "italic", editor, SCRIPT_MARKERS.PARENTHETICAL, plugin);
+        subMenu.addItem((item2) => {
+          item2.setTitle("Transition").setIcon("arrow-right");
+          const m = item2.setSubmenu();
+          m.addItem((i) => i.setTitle("CUT TO:").onClick(() => plugin.insertText(editor, "CUT TO:", true)));
+          m.addItem((i) => i.setTitle("FADE OUT.").onClick(() => plugin.insertText(editor, "FADE OUT.", true)));
+          m.addItem((i) => i.setTitle("FADE IN:").onClick(() => plugin.insertText(editor, "FADE IN:", true)));
+          m.addItem((i) => i.setTitle("DISSOLVE TO:").onClick(() => plugin.insertText(editor, "DISSOLVE TO:", true)));
+        });
+        subMenu.addItem((item2) => {
+          item2.setTitle("Insert Note").setIcon("sticky-note").onClick(() => plugin.insertText(editor, "%%note: Note text here%%", true));
+        });
+        subMenu.addSeparator();
+        subMenu.addItem((subItem) => {
+          subItem.setTitle("Renumber scenes").setIcon("list-ordered").onClick(() => plugin.renumberScenes(editor));
+        });
+        subMenu.addSeparator();
+        subMenu.addItem((subItem) => {
+          subItem.setTitle("Export to .docx").setIcon("file-output").onClick(() => {
+            void plugin.exportFileToDocx(view.file);
+          });
+        });
+        subMenu.addItem((subItem) => {
+          subItem.setTitle("Export summary").setIcon("file-text").onClick(() => {
+            void plugin.exportSummary(view.file);
+          });
+        });
+      });
+    })
+  );
+  plugin.registerEvent(
+    app.workspace.on("view-actions-menu", (menu, view) => {
+      if (view instanceof import_obsidian5.MarkdownView && plugin.isScript(view.file)) {
+        menu.addItem((item) => {
+          item.setTitle("Open Story Board").setIcon("layout-grid").onClick(() => {
+            void plugin.openStoryBoard(view.leaf, view.file);
+          });
+        });
+      }
+    })
+  );
+  plugin.registerEvent(
+    app.workspace.on("file-menu", (menu, file) => {
+      if (file instanceof import_obsidian5.TFile && file.extension === "md") {
+        if (plugin.isScript(file)) {
+          menu.addItem((item) => {
+            item.setTitle("Export to .docx").setIcon("file-output").onClick(async () => {
+              await plugin.exportFileToDocx(file);
+            });
+          });
+          menu.addItem((item) => {
+            item.setTitle("Export summary").setIcon("file-text").onClick(async () => {
+              await plugin.exportSummary(file);
+            });
+          });
+        }
+      }
+      menu.addItem((item) => {
+        item.setTitle("New script").setIcon("scroll-text").onClick(async () => {
+          var _a;
+          let folderPath = "/";
+          if (file instanceof import_obsidian5.TFolder) {
+            folderPath = file.path;
+          } else if (file instanceof import_obsidian5.TFile) {
+            folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
+          }
+          await plugin.createNewScript(folderPath);
+        });
+      });
+    })
+  );
+  plugin.registerEvent(
+    app.workspace.on("file-open", (file) => {
+      const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+      if (view) {
+        const headerActions = view.containerEl.querySelector(".view-actions");
+        const existingBtn = headerActions == null ? void 0 : headerActions.querySelector(".script-editor-storyboard-action");
+        if (plugin.isScript(file)) {
+          if (!existingBtn && headerActions) {
+            const actionBtn = view.addAction("layout-grid", "Open Story Board", () => {
+              void plugin.openStoryBoard(view.leaf, file);
+            });
+            actionBtn.addClass("script-editor-storyboard-action");
+          } else if (existingBtn) {
+            existingBtn.style.display = "";
+          }
+        } else {
+          if (existingBtn) {
+            existingBtn.style.display = "none";
+          }
+        }
+      }
+      plugin.refreshSceneView(false);
+    })
+  );
+}
+function addMenuItem(menu, title, icon, editor, marker, plugin) {
+  if (menu instanceof import_obsidian5.Menu) {
+    menu.addItem((item) => {
+      item.setTitle(title).setIcon(icon).onClick(() => plugin.toggleLinePrefix(editor, marker));
+    });
+  }
+}
+
 // main.ts
 var SCRIPT_MARKERS = {
   CHARACTER: "@",
@@ -20127,7 +20314,7 @@ var LP_CLASSES = {
   NOTE: "lp-note",
   SYMBOL: "lp-marker-symbol"
 };
-var ScriptEditorPlugin3 = class extends import_obsidian5.Plugin {
+var ScriptEditorPlugin4 = class extends import_obsidian6.Plugin {
   constructor() {
     super(...arguments);
     this.lastActiveFile = null;
@@ -20144,76 +20331,7 @@ var ScriptEditorPlugin3 = class extends import_obsidian5.Plugin {
     );
     await this.loadSettings();
     this.addSettingTab(new ScriptEditorSettingTab(this.app, this));
-    this.addCommand({
-      id: "renumber-scenes",
-      name: "Renumber scenes",
-      editorCallback: (editor) => this.renumberScenes(editor)
-    });
-    this.addRibbonIcon("scroll-text", "New script", async () => {
-      await this.createNewScript();
-    });
-    this.addCommand({
-      id: "create-new-script",
-      name: "Create new script",
-      callback: async () => {
-        await this.createNewScript();
-      }
-    });
-    this.addCommand({
-      id: "export-to-docx",
-      name: "Export current script to .docx",
-      checkCallback: (checking) => {
-        var _a;
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
-        if (view) {
-          const fileCache = this.app.metadataCache.getFileCache(view.file);
-          const cssClasses = (_a = fileCache == null ? void 0 : fileCache.frontmatter) == null ? void 0 : _a.cssclasses;
-          const classesArray = Array.isArray(cssClasses) ? cssClasses : typeof cssClasses === "string" ? [cssClasses] : [];
-          if (classesArray.includes("fountain") || classesArray.includes("script")) {
-            if (!checking) {
-              void this.exportFileToDocx(view.file);
-            }
-            return true;
-          }
-        }
-        return false;
-      }
-    });
-    this.addCommand({
-      id: "open-story-board",
-      name: "Open story board for current script",
-      checkCallback: (checking) => {
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
-        if (view && this.isScript(view.file)) {
-          if (!checking) {
-            void this.openStoryBoard(view.leaf, view.file);
-          }
-          return true;
-        }
-        return false;
-      }
-    });
-    this.addCommand({
-      id: "show-scene-mode",
-      name: "Show scene mode",
-      callback: async () => {
-        await this.activateView();
-      }
-    });
-    this.addCommand({
-      id: "export-summary",
-      name: "Export scene summaries to .md",
-      checkCallback: (checking) => {
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
-        if (view && this.isScript(view.file)) {
-          if (!checking) {
-            void this.exportSummary(view.file);
-          }
-          return true;
-        }
-        return false;
-      }
-    });
+    registerMenus(this);
     registerReadingView(this);
     this.registerEditorExtension(livePreviewExtension(this));
     this.registerEvent(
@@ -20237,126 +20355,7 @@ var ScriptEditorPlugin3 = class extends import_obsidian5.Plugin {
         }
       })
     );
-    this.registerEvent(
-      this.app.workspace.on("editor-menu", (menu, editor, view) => {
-        var _a;
-        const fileCache = view.file ? this.app.metadataCache.getFileCache(view.file) : null;
-        const cssClasses = (_a = fileCache == null ? void 0 : fileCache.frontmatter) == null ? void 0 : _a.cssclasses;
-        const classesArray = Array.isArray(cssClasses) ? cssClasses : typeof cssClasses === "string" ? [cssClasses] : [];
-        if (!classesArray.includes("fountain") && !classesArray.includes("script")) {
-          return;
-        }
-        menu.addItem((item) => {
-          item.setTitle("Script Editor").setIcon("film");
-          const subMenu = item.setSubmenu();
-          subMenu.addItem((startItem) => {
-            startItem.setTitle("Scene heading").setIcon("clapperboard");
-            const sceneMenu = startItem.setSubmenu();
-            sceneMenu.addItem((i) => i.setTitle("EXT.").onClick(() => this.insertText(editor, "EXT. ", false)));
-            sceneMenu.addItem((i) => i.setTitle("INT.").onClick(() => this.insertText(editor, "INT. ", false)));
-            sceneMenu.addItem((i) => i.setTitle("I/E.").onClick(() => this.insertText(editor, "INT./EXT. ", false)));
-          });
-          this.addMenuItem(subMenu, "Character (@)", "user", editor, SCRIPT_MARKERS.CHARACTER);
-          this.addMenuItem(subMenu, "Parenthetical ( ( )", "italic", editor, SCRIPT_MARKERS.PARENTHETICAL);
-          subMenu.addItem((item2) => {
-            item2.setTitle("Transition").setIcon("arrow-right");
-            const m = item2.setSubmenu();
-            m.addItem((i) => i.setTitle("CUT TO:").onClick(() => this.insertText(editor, "CUT TO:", true)));
-            m.addItem((i) => i.setTitle("FADE OUT.").onClick(() => this.insertText(editor, "FADE OUT.", true)));
-            m.addItem((i) => i.setTitle("FADE IN:").onClick(() => this.insertText(editor, "FADE IN:", true)));
-            m.addItem((i) => i.setTitle("DISSOLVE TO:").onClick(() => this.insertText(editor, "DISSOLVE TO:", true)));
-          });
-          subMenu.addItem((item2) => {
-            item2.setTitle("Insert Note").setIcon("sticky-note").onClick(() => this.insertText(editor, "%%note: Note text here%%", true));
-          });
-          subMenu.addSeparator();
-          subMenu.addItem((subItem) => {
-            subItem.setTitle("Renumber scenes").setIcon("list-ordered").onClick(() => this.renumberScenes(editor));
-          });
-          subMenu.addSeparator();
-          subMenu.addItem((subItem) => {
-            subItem.setTitle("Export to .docx").setIcon("file-output").onClick(() => {
-              void this.exportFileToDocx(view.file);
-            });
-          });
-          subMenu.addItem((subItem) => {
-            subItem.setTitle("Export summary").setIcon("file-text").onClick(() => {
-              void this.exportSummary(view.file);
-            });
-          });
-        });
-      })
-    );
-    this.registerEvent(
-      this.app.workspace.on("view-actions-menu", (menu, view) => {
-        if (view instanceof import_obsidian5.MarkdownView && this.isScript(view.file)) {
-          menu.addItem((item) => {
-            item.setTitle("Open Story Board").setIcon("layout-grid").onClick(() => {
-              void this.openStoryBoard(view.leaf, view.file);
-            });
-          });
-        }
-      })
-    );
-    this.registerEvent(
-      this.app.workspace.on("file-menu", (menu, file) => {
-        var _a;
-        if (file instanceof import_obsidian5.TFile && file.extension === "md") {
-          const cache = this.app.metadataCache.getFileCache(file);
-          const cssClasses = (_a = cache == null ? void 0 : cache.frontmatter) == null ? void 0 : _a.cssclasses;
-          const classesArray = Array.isArray(cssClasses) ? cssClasses : typeof cssClasses === "string" ? [cssClasses] : [];
-          if (classesArray.includes("fountain") || classesArray.includes("script")) {
-            menu.addItem((item) => {
-              item.setTitle("Export to .docx").setIcon("file-output").onClick(async () => {
-                await this.exportFileToDocx(file);
-              });
-            });
-            menu.addItem((item) => {
-              item.setTitle("Export summary").setIcon("file-text").onClick(async () => {
-                await this.exportSummary(file);
-              });
-            });
-          }
-        }
-        menu.addItem((item) => {
-          item.setTitle("New script").setIcon("scroll-text").onClick(async () => {
-            var _a2;
-            let folderPath = "/";
-            if (file instanceof import_obsidian5.TFolder) {
-              folderPath = file.path;
-            } else if (file instanceof import_obsidian5.TFile) {
-              folderPath = ((_a2 = file.parent) == null ? void 0 : _a2.path) || "/";
-            }
-            await this.createNewScript(folderPath);
-          });
-        });
-      })
-    );
-    this.registerEditorSuggest(new CharacterSuggest(this.app, this));
-    this.registerEvent(
-      this.app.workspace.on("file-open", (file) => {
-        const view = this.app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
-        if (view) {
-          const headerActions = view.containerEl.querySelector(".view-actions");
-          const existingBtn = headerActions == null ? void 0 : headerActions.querySelector(".script-editor-storyboard-action");
-          if (this.isScript(file)) {
-            if (!existingBtn && headerActions) {
-              const actionBtn = view.addAction("layout-grid", "Open Story Board", () => {
-                void this.openStoryBoard(view.leaf, file);
-              });
-              actionBtn.addClass("script-editor-storyboard-action");
-            } else if (existingBtn) {
-              existingBtn.style.display = "";
-            }
-          } else {
-            if (existingBtn) {
-              existingBtn.style.display = "none";
-            }
-          }
-        }
-        this.refreshSceneView(false);
-      })
-    );
+    registerMenus(this);
     this.registerEvent(
       this.app.metadataCache.on("changed", () => {
         this.refreshSceneView(true);
@@ -20442,13 +20441,6 @@ var ScriptEditorPlugin3 = class extends import_obsidian5.Plugin {
   // ------------------------------------------------------------------
   // Core Logic
   // ------------------------------------------------------------------
-  addMenuItem(menu, title, icon, editor, marker) {
-    if (menu instanceof import_obsidian5.Menu) {
-      menu.addItem((item) => {
-        item.setTitle(title).setIcon(icon).onClick(() => this.toggleLinePrefix(editor, marker));
-      });
-    }
-  }
   exportExplicitFormat(text) {
     return this.detectExplicitFormat(text);
   }
@@ -20543,14 +20535,14 @@ var ScriptEditorPlugin3 = class extends import_obsidian5.Plugin {
       const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
       const fileName = `${baseName}.docx`;
       const filePath = folderPath === "/" ? fileName : `${folderPath}/${fileName}`;
-      new import_obsidian5.Notice(`Exporting ${fileName}...`);
+      new import_obsidian6.Notice(`Exporting ${fileName}...`);
       const buffer2 = await DocxExporter.exportToDocx(content, baseName);
       const arrayBuffer = buffer2.buffer.slice(buffer2.byteOffset, buffer2.byteOffset + buffer2.byteLength);
       await this.app.vault.adapter.writeBinary(filePath, arrayBuffer);
-      new import_obsidian5.Notice(`Successfully exported to ${baseName}.docx`);
+      new import_obsidian6.Notice(`Successfully exported to ${baseName}.docx`);
     } catch (error) {
       console.error("Export to DOCX failed:", error);
-      new import_obsidian5.Notice(`Failed to export to DOCX: ${error.message}`);
+      new import_obsidian6.Notice(`Failed to export to DOCX: ${error.message}`);
     }
   }
   async exportSummary(file) {
@@ -20588,25 +20580,25 @@ var ScriptEditorPlugin3 = class extends import_obsidian5.Plugin {
         }
       });
       if (summaryLines.length === 0) {
-        new import_obsidian5.Notice("No scenes with summaries found in the script.");
+        new import_obsidian6.Notice("No scenes with summaries found in the script.");
         return;
       }
       const finalContent = summaryLines.join("\n");
       const existingFile = this.app.vault.getAbstractFileByPath(summaryFilePath);
-      if (existingFile instanceof import_obsidian5.TFile) {
+      if (existingFile instanceof import_obsidian6.TFile) {
         await this.app.vault.modify(existingFile, finalContent);
       } else {
         await this.app.vault.create(summaryFilePath, finalContent);
       }
-      new import_obsidian5.Notice(`Successfully exported summary to ${summaryFileName}`);
+      new import_obsidian6.Notice(`Successfully exported summary to ${summaryFileName}`);
       const newFile = this.app.vault.getAbstractFileByPath(summaryFilePath);
-      if (newFile instanceof import_obsidian5.TFile) {
+      if (newFile instanceof import_obsidian6.TFile) {
         const leaf = this.app.workspace.getLeaf(false);
         await leaf.openFile(newFile);
       }
     } catch (error) {
       console.error("Export summary failed:", error);
-      new import_obsidian5.Notice(`Failed to export summary: ${error.message}`);
+      new import_obsidian6.Notice(`Failed to export summary: ${error.message}`);
     }
   }
   async createNewScript(folderPath) {
@@ -20679,7 +20671,7 @@ MARY:
 You can make it.
 `;
     const templateFile = this.app.vault.getAbstractFileByPath("Script Templet.md");
-    if (templateFile instanceof import_obsidian5.TFile) {
+    if (templateFile instanceof import_obsidian6.TFile) {
       fileContent = await this.app.vault.read(templateFile);
     }
     const newFile = await this.app.vault.create(filePath, fileContent);
@@ -20692,69 +20684,6 @@ You can make it.
   }
   async saveSettings() {
     await this.saveData(this.settings);
-  }
-};
-function extractCharacterNames(content, plugin) {
-  const charCounts = /* @__PURE__ */ new Map();
-  const lines = content.split("\n");
-  lines.forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.length > 50)
-      return;
-    const format = plugin.detectExplicitFormat(trimmed);
-    if (!format || format.typeKey !== "CHARACTER")
-      return;
-    let name = "";
-    if (trimmed.startsWith(SCRIPT_MARKERS.CHARACTER)) {
-      name = trimmed.substring(1).trim();
-    } else if (CHARACTER_COLON_REGEX.test(trimmed)) {
-      const match = trimmed.match(CHARACTER_COLON_REGEX);
-      if (match)
-        name = match[1].trim();
-    } else if (CHARACTER_CAPS_REGEX2.test(trimmed)) {
-      name = trimmed.split("(")[0].trim();
-    }
-    name = name.replace(/[:：]+$/, "").trim();
-    if (name && name.length > 0) {
-      charCounts.set(name, (charCounts.get(name) || 0) + 1);
-    }
-  });
-  return charCounts;
-}
-var CharacterSuggest = class extends import_obsidian5.EditorSuggest {
-  constructor(app, plugin) {
-    super(app);
-    this.plugin = plugin;
-  }
-  onTrigger(cursor, editor, file) {
-    if (!this.plugin.isScript(file))
-      return null;
-    const line = editor.getLine(cursor.line);
-    const sub = line.substring(0, cursor.ch);
-    const match = sub.match(/@([^ ]*)$/);
-    if (match) {
-      return {
-        start: { line: cursor.line, ch: match.index },
-        end: { line: cursor.line, ch: cursor.ch },
-        query: match[1]
-      };
-    }
-    return null;
-  }
-  async getSuggestions(context) {
-    const content = await this.app.vault.read(context.file);
-    const charMap = extractCharacterNames(content, this.plugin);
-    const query = context.query.toLowerCase();
-    return Array.from(charMap.entries()).filter(([name]) => name.toLowerCase().includes(query)).sort((a, b) => b[1] - a[1]).map(([name]) => name).slice(0, 10);
-  }
-  renderSuggestion(suggestion, el) {
-    el.createEl("div", { text: suggestion });
-  }
-  selectSuggestion(suggestion, event) {
-    const { context } = this;
-    if (context) {
-      context.editor.replaceRange(`@${suggestion}`, context.start, context.end);
-    }
   }
 };
 /*! Bundled license information:

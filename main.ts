@@ -5,6 +5,7 @@ import { StoryBoardView, STORYBOARD_VIEW_TYPE } from './storyBoardView';
 import { registerReadingView } from './readingView';
 import { livePreviewExtension } from './editorExtension';
 import { ScriptEditorSettings, DEFAULT_SETTINGS, ScriptEditorSettingTab } from './settings';
+import { registerMenus, ExtendedMenuItem } from './menus';
 
 // Script Symbols
 export const SCRIPT_MARKERS = {
@@ -52,10 +53,6 @@ export interface ScriptFormat {
 }
 
 
-interface ExtendedMenuItem extends MenuItem {
-    setSubmenu(): Menu;
-}
-
 export default class ScriptEditorPlugin extends Plugin {
     docxExporter: DocxExporter;
     settings: ScriptEditorSettings;
@@ -77,85 +74,8 @@ export default class ScriptEditorPlugin extends Plugin {
         await this.loadSettings();
         this.addSettingTab(new ScriptEditorSettingTab(this.app, this));
 
-        // 2. Command: Renumber Scenes
-        this.addCommand({
-            id: 'renumber-scenes',
-            name: 'Renumber scenes',
-            editorCallback: (editor: Editor) => this.renumberScenes(editor)
-        });
-
-        // 2a. New Script Command & Ribbon
-        this.addRibbonIcon('scroll-text', 'New script', async () => {
-            await this.createNewScript();
-        });
-
-        this.addCommand({
-            id: 'create-new-script',
-            name: 'Create new script',
-            callback: async () => {
-                await this.createNewScript();
-            }
-        });
-
-        // 2b. Export to Docx Command
-        this.addCommand({
-            id: 'export-to-docx',
-            name: 'Export current script to .docx',
-            checkCallback: (checking: boolean) => {
-                const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-                if (view) {
-                    const fileCache = this.app.metadataCache.getFileCache(view.file!);
-                    const cssClasses = fileCache?.frontmatter?.cssclasses;
-                    const classesArray = Array.isArray(cssClasses) ? cssClasses : (typeof cssClasses === 'string' ? [cssClasses] : []);
-
-                    if (classesArray.includes('fountain') || classesArray.includes('script')) {
-                        if (!checking) {
-                            void this.exportFileToDocx(view.file!);
-                        }
-                        return true;
-                    }
-                }
-                return false;
-            }
-        });
-
-        this.addCommand({
-            id: 'open-story-board',
-            name: 'Open story board for current script',
-            checkCallback: (checking: boolean) => {
-                const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-                if (view && this.isScript(view.file)) {
-                    if (!checking) {
-                        void this.openStoryBoard(view.leaf, view.file!);
-                    }
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        this.addCommand({
-            id: 'show-scene-mode',
-            name: 'Show scene mode',
-            callback: async () => {
-                await this.activateView();
-            }
-        });
-
-        this.addCommand({
-            id: 'export-summary',
-            name: 'Export scene summaries to .md',
-            checkCallback: (checking: boolean) => {
-                const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-                if (view && this.isScript(view.file)) {
-                    if (!checking) {
-                        void this.exportSummary(view.file!);
-                    }
-                    return true;
-                }
-                return false;
-            }
-        });
+        // 2. UI Components (Commands, Ribbon, Menus)
+        registerMenus(this);
 
         // 3. Post Processor (Reading Mode & PDF)
         registerReadingView(this);
@@ -194,165 +114,10 @@ export default class ScriptEditorPlugin extends Plugin {
             })
         );
 
-        // 5. Context Menu
-        this.registerEvent(
-            this.app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
-                // Scope Check: Robust check using Metadata Cache instead of DOM
-                const fileCache = view.file ? this.app.metadataCache.getFileCache(view.file) : null;
-                const cssClasses = fileCache?.frontmatter?.cssclasses;
-                const classesArray = Array.isArray(cssClasses) ? cssClasses : (typeof cssClasses === 'string' ? [cssClasses] : []);
 
-                if (!classesArray.includes('fountain') && !classesArray.includes('script')) {
-                    return;
-                }
+        // 5. Context Menus & Buttons
+        registerMenus(this);
 
-                menu.addItem((item: MenuItem) => {
-                    item.setTitle("Script Editor").setIcon("film");
-                    const subMenu = (item as ExtendedMenuItem).setSubmenu();
-
-                    // Scene Heading Submenu
-                    subMenu.addItem((startItem: MenuItem) => {
-                        startItem.setTitle("Scene heading").setIcon("clapperboard");
-                        const sceneMenu = (startItem as ExtendedMenuItem).setSubmenu();
-                        sceneMenu.addItem((i: MenuItem) => i.setTitle("EXT.").onClick(() => this.insertText(editor, "EXT. ", false)));
-                        sceneMenu.addItem((i: MenuItem) => i.setTitle("INT.").onClick(() => this.insertText(editor, "INT. ", false)));
-                        sceneMenu.addItem((i: MenuItem) => i.setTitle("I/E.").onClick(() => this.insertText(editor, "INT./EXT. ", false)));
-                    });
-
-                    this.addMenuItem(subMenu, "Character (@)", "user", editor, SCRIPT_MARKERS.CHARACTER);
-                    this.addMenuItem(subMenu, "Parenthetical ( ( )", "italic", editor, SCRIPT_MARKERS.PARENTHETICAL);
-
-                    // Transition Submenu
-                    subMenu.addItem((item: MenuItem) => {
-                        item.setTitle("Transition").setIcon("arrow-right");
-                        const m = (item as ExtendedMenuItem).setSubmenu();
-                        m.addItem((i: MenuItem) => i.setTitle("CUT TO:").onClick(() => this.insertText(editor, "CUT TO:", true)));
-                        m.addItem((i: MenuItem) => i.setTitle("FADE OUT.").onClick(() => this.insertText(editor, "FADE OUT.", true)));
-                        m.addItem((i: MenuItem) => i.setTitle("FADE IN:").onClick(() => this.insertText(editor, "FADE IN:", true)));
-                        m.addItem((i: MenuItem) => i.setTitle("DISSOLVE TO:").onClick(() => this.insertText(editor, "DISSOLVE TO:", true)));
-                    });
-
-                    subMenu.addItem((item: MenuItem) => {
-                        item.setTitle("Insert Note").setIcon("sticky-note")
-                            .onClick(() => this.insertText(editor, "%%note: Note text here%%", true));
-                    });
-
-                    subMenu.addSeparator();
-
-                    subMenu.addItem((subItem: MenuItem) => {
-                        subItem.setTitle("Renumber scenes").setIcon("list-ordered")
-                            .onClick(() => this.renumberScenes(editor));
-                    });
-
-                    subMenu.addSeparator();
-
-                    subMenu.addItem((subItem: MenuItem) => {
-                        subItem.setTitle("Export to .docx").setIcon("file-output")
-                            .onClick(() => {
-                                void this.exportFileToDocx(view.file!);
-                            });
-                    });
-
-                    subMenu.addItem((subItem: MenuItem) => {
-                        subItem.setTitle("Export summary").setIcon("file-text")
-                            .onClick(() => {
-                                void this.exportSummary(view.file!);
-                            });
-                    });
-                });
-            })
-        );
-        // 5a. Add Storyboard toggle to view header
-        this.registerEvent(
-            (this.app.workspace as any).on("view-actions-menu", (menu: Menu, view: any) => {
-                if (view instanceof MarkdownView && this.isScript(view.file)) {
-                    menu.addItem((item: MenuItem) => {
-                        item.setTitle("Open Story Board")
-                            .setIcon("layout-grid")
-                            .onClick(() => {
-                                void this.openStoryBoard(view.leaf, view.file!);
-                            });
-                    });
-                }
-            })
-        );
-
-        // 6. File Explorer Context Menu
-        this.registerEvent(
-            this.app.workspace.on("file-menu", (menu: Menu, file: TFile | TFolder) => {
-                if (file instanceof TFile && file.extension === 'md') {
-                    const cache = this.app.metadataCache.getFileCache(file);
-                    const cssClasses = cache?.frontmatter?.cssclasses;
-                    const classesArray = Array.isArray(cssClasses) ? cssClasses : (typeof cssClasses === 'string' ? [cssClasses] : []);
-
-                    if (classesArray.includes('fountain') || classesArray.includes('script')) {
-                        menu.addItem((item) => {
-                            item
-                                .setTitle("Export to .docx")
-                                .setIcon("file-output")
-                                .onClick(async () => {
-                                    await this.exportFileToDocx(file);
-                                });
-                        });
-
-                        menu.addItem((item) => {
-                            item
-                                .setTitle("Export summary")
-                                .setIcon("file-text")
-                                .onClick(async () => {
-                                    await this.exportSummary(file);
-                                });
-                        });
-                    }
-                }
-
-                menu.addItem((item) => {
-                    item
-                        .setTitle("New script")
-                        .setIcon("scroll-text")
-                        .onClick(async () => {
-                            let folderPath = "/";
-                            if (file instanceof TFolder) {
-                                folderPath = file.path;
-                            } else if (file instanceof TFile) {
-                                folderPath = file.parent?.path || "/";
-                            }
-                            await this.createNewScript(folderPath);
-                        });
-                });
-            })
-        );
-
-        // 2c. Register Character Suggest
-        this.registerEditorSuggest(new CharacterSuggest(this.app, this));
-
-        this.registerEvent(
-            this.app.workspace.on('file-open', (file) => {
-                const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-                if (view) {
-                    const headerActions = view.containerEl.querySelector('.view-actions');
-                    const existingBtn = headerActions?.querySelector('.script-editor-storyboard-action');
-
-                    if (this.isScript(file)) {
-                        // Show or create if script
-                        if (!existingBtn && headerActions) {
-                            const actionBtn = view.addAction("layout-grid", "Open Story Board", () => {
-                                void this.openStoryBoard(view.leaf, file!);
-                            });
-                            actionBtn.addClass('script-editor-storyboard-action');
-                        } else if (existingBtn) {
-                            (existingBtn as HTMLElement).style.display = '';
-                        }
-                    } else {
-                        // Hide if not script
-                        if (existingBtn) {
-                            (existingBtn as HTMLElement).style.display = 'none';
-                        }
-                    }
-                }
-                this.refreshSceneView(false);
-            })
-        );
         this.registerEvent(
             this.app.metadataCache.on('changed', () => {
                 this.refreshSceneView(true);
@@ -454,13 +219,7 @@ export default class ScriptEditorPlugin extends Plugin {
     // Core Logic
     // ------------------------------------------------------------------
 
-    addMenuItem(menu: Menu | MenuItem, title: string, icon: string, editor: Editor, marker: string) {
-        if (menu instanceof Menu) {
-            menu.addItem((item: MenuItem) => {
-                item.setTitle(title).setIcon(icon).onClick(() => this.toggleLinePrefix(editor, marker));
-            });
-        }
-    }
+
 
     exportExplicitFormat(text: string): ScriptFormat | null {
         return this.detectExplicitFormat(text);
