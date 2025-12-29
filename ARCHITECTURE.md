@@ -5,18 +5,20 @@ This document outlines the modular structure of the Script Editor Obsidian plugi
 ## Core Structure
 
 ### [main.ts](main.ts)
-**The Central Orchestrator.**
+**The Central Orchestrator & Rulebook.**
 - **Plugin Lifecycle**: Handles `onload` and `onunload`.
-- **Core Parsing**: Contains shared Regex definitions and the `detectExplicitFormat` utility used by all view modules.
-- **Logic Implementation**: Houses the actual algorithms for major actions like scene renumbering, Word export, and new script creation.
-- **Editor Logic**: Contains the `CharacterSuggest` class for @-mentions and the supporting character extraction logic.
+- **Core Parsing**: Contains shared Regex definitions and the `detectExplicitFormat` utility used by all modules.
+- **State Management**: Manages settings and cross-view synchronization.
 
 ### [menus.ts](menus.ts)
-**The UI Entrance.**
-- **Commands**: Registers all plugin commands available in the Command Palette.
-- **Ribbon Icons**: Handles the left sidebar scroll icon.
-- **Context Menus**: Manages the "Script Editor" submenus in the Editor and File Explorer.
-- **Header Buttons**: Dynamically manages the Storyboard icon in the note header.
+**The UI Entrance & Action Implementation.**
+- **Commands & Menus**: Registers and implements all plugin commands, context menus, ribbon icons, and header buttons.
+- **Action Logic**: Houses the algorithms for major actions like scene renumbering, Word export, and new script creation (moved from `main.ts`).
+
+### [suggest.ts](suggest.ts)
+**Writing Assistance.**
+- **Auto-complete**: Implements the `CharacterSuggest` class for @-mentions.
+- **Data Harvesting**: Contains the logic to scan scripts and extract character names and frequencies.
 
 ### [settings.ts](settings.ts)
 **Configuration Management.**
@@ -56,7 +58,7 @@ This document outlines the modular structure of the Script Editor Obsidian plugi
 The `detectExplicitFormat` function in `main.ts` is the single source of truth for identifying whether a line represents a Scene, Character, Dialogue, etc. Both `readingView.ts` and `editorExtension.ts` import this to ensure consistent rendering across all modes.
 
 ### Action Execution
-UI elements in `menus.ts` act as triggers. They call the implementation methods located in `main.ts` to perform the actual work (e.g., `plugin.renumberScenes(editor)`).
+UI elements in `menus.ts` act as triggers. They directly call the standalone implementation functions located within `menus.ts` (e.g., `renumberScenes(plugin, editor)`), reducing the burden on the main plugin instance.
 
 ## Maintenance Notes
 - When adding a new script element, update the Regexes and `detectExplicitFormat` in `main.ts`.

@@ -36,10 +36,10 @@ __export(main_exports, {
   SCRIPT_MARKERS: () => SCRIPT_MARKERS,
   SUMMARY_REGEX: () => SUMMARY_REGEX,
   TRANSITION_REGEX: () => TRANSITION_REGEX,
-  default: () => ScriptEditorPlugin4
+  default: () => ScriptEditorPlugin5
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian6 = require("obsidian");
+var import_obsidian7 = require("obsidian");
 
 // node_modules/docx/dist/index.mjs
 var __defProp2 = Object.defineProperty;
@@ -20057,6 +20057,7 @@ var DEFAULT_SETTINGS = {
   mySetting: "default",
   geminiApiKey: ""
 };
+var SPONSOR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
 var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
@@ -20084,15 +20085,26 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     syntaxDiv.createEl("li", { text: "Dialogue: Text below Character \u2014 Automatically indented." });
     syntaxDiv.createEl("li", { text: "Parenthetical: (emotion) / OS: / VO: \u2014 Centered & italic." });
     syntaxDiv.createEl("li", { text: "Transition: CUT TO: / FADE IN \u2014 Right aligned." });
-    const supportDiv = containerEl.createEl("div", { attr: { style: "margin-top: 20px; border-top: 1px solid var(--background-modifier-border); padding-top: 20px;" } });
+    const supportDiv = containerEl.createEl("div", { cls: "script-editor-settings-support" });
     supportDiv.createEl("p", { text: "If you enjoy using Script Editor, consider supporting its development!" });
-    const link = supportDiv.createEl("a", { href: "https://buymeacoffee.com/ideo2004c" });
-    link.createEl("img", {
+    const sponsorActions = supportDiv.createDiv({ cls: "script-editor-sponsor-actions" });
+    const bmacLink = sponsorActions.createEl("a", {
+      href: "https://buymeacoffee.com/ideo2004c",
+      cls: "script-editor-sponsor-btn bmac-btn"
+    });
+    bmacLink.createEl("img", {
       attr: {
         src: "https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png",
         style: "height: 40px;"
       }
     });
+    const githubLink = sponsorActions.createEl("a", {
+      href: "https://github.com/sponsors/ideo2004-afk",
+      cls: "script-editor-sponsor-btn github-btn"
+    });
+    const githubIcon = githubLink.createDiv({ cls: "github-sponsor-icon" });
+    githubIcon.innerHTML = SPONSOR_ICON;
+    githubLink.createSpan({ text: "GitHub Sponsor" });
   }
 };
 
@@ -20101,18 +20113,18 @@ var import_obsidian5 = require("obsidian");
 function registerMenus(plugin) {
   const { app } = plugin;
   plugin.addRibbonIcon("scroll-text", "New script", async () => {
-    await plugin.createNewScript();
+    await createNewScript(plugin);
   });
   plugin.addCommand({
     id: "renumber-scenes",
     name: "Renumber scenes",
-    editorCallback: (editor) => plugin.renumberScenes(editor)
+    editorCallback: (editor) => renumberScenes(plugin, editor)
   });
   plugin.addCommand({
     id: "create-new-script",
     name: "Create new script",
     callback: async () => {
-      await plugin.createNewScript();
+      await createNewScript(plugin);
     }
   });
   plugin.addCommand({
@@ -20122,7 +20134,7 @@ function registerMenus(plugin) {
       const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
       if (view && plugin.isScript(view.file)) {
         if (!checking) {
-          void plugin.exportFileToDocx(view.file);
+          void exportFileToDocx(plugin, view.file);
         }
         return true;
       }
@@ -20157,7 +20169,7 @@ function registerMenus(plugin) {
       const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
       if (view && plugin.isScript(view.file)) {
         if (!checking) {
-          void plugin.exportSummary(view.file);
+          void exportSummary(plugin, view.file);
         }
         return true;
       }
@@ -20174,36 +20186,36 @@ function registerMenus(plugin) {
         subMenu.addItem((startItem) => {
           startItem.setTitle("Scene heading").setIcon("clapperboard");
           const sceneMenu = startItem.setSubmenu();
-          sceneMenu.addItem((i) => i.setTitle("EXT.").onClick(() => plugin.insertText(editor, "EXT. ", false)));
-          sceneMenu.addItem((i) => i.setTitle("INT.").onClick(() => plugin.insertText(editor, "INT. ", false)));
-          sceneMenu.addItem((i) => i.setTitle("I/E.").onClick(() => plugin.insertText(editor, "INT./EXT. ", false)));
+          sceneMenu.addItem((i) => i.setTitle("EXT.").onClick(() => insertText(editor, "EXT. ", false)));
+          sceneMenu.addItem((i) => i.setTitle("INT.").onClick(() => insertText(editor, "INT. ", false)));
+          sceneMenu.addItem((i) => i.setTitle("I/E.").onClick(() => insertText(editor, "INT./EXT. ", false)));
         });
         addMenuItem(subMenu, "Character (@)", "user", editor, SCRIPT_MARKERS.CHARACTER, plugin);
         addMenuItem(subMenu, "Parenthetical ( ( )", "italic", editor, SCRIPT_MARKERS.PARENTHETICAL, plugin);
         subMenu.addItem((item2) => {
           item2.setTitle("Transition").setIcon("arrow-right");
           const m = item2.setSubmenu();
-          m.addItem((i) => i.setTitle("CUT TO:").onClick(() => plugin.insertText(editor, "CUT TO:", true)));
-          m.addItem((i) => i.setTitle("FADE OUT.").onClick(() => plugin.insertText(editor, "FADE OUT.", true)));
-          m.addItem((i) => i.setTitle("FADE IN:").onClick(() => plugin.insertText(editor, "FADE IN:", true)));
-          m.addItem((i) => i.setTitle("DISSOLVE TO:").onClick(() => plugin.insertText(editor, "DISSOLVE TO:", true)));
+          m.addItem((i) => i.setTitle("CUT TO:").onClick(() => insertText(editor, "CUT TO:", true)));
+          m.addItem((i) => i.setTitle("FADE OUT.").onClick(() => insertText(editor, "FADE OUT.", true)));
+          m.addItem((i) => i.setTitle("FADE IN:").onClick(() => insertText(editor, "FADE IN:", true)));
+          m.addItem((i) => i.setTitle("DISSOLVE TO:").onClick(() => insertText(editor, "DISSOLVE TO:", true)));
         });
         subMenu.addItem((item2) => {
-          item2.setTitle("Insert Note").setIcon("sticky-note").onClick(() => plugin.insertText(editor, "%%note: Note text here%%", true));
+          item2.setTitle("Insert Note").setIcon("sticky-note").onClick(() => insertText(editor, "%%note: Note text here%%", true));
         });
         subMenu.addSeparator();
         subMenu.addItem((subItem) => {
-          subItem.setTitle("Renumber scenes").setIcon("list-ordered").onClick(() => plugin.renumberScenes(editor));
+          subItem.setTitle("Renumber scenes").setIcon("list-ordered").onClick(() => renumberScenes(plugin, editor));
         });
         subMenu.addSeparator();
         subMenu.addItem((subItem) => {
           subItem.setTitle("Export to .docx").setIcon("file-output").onClick(() => {
-            void plugin.exportFileToDocx(view.file);
+            void exportFileToDocx(plugin, view.file);
           });
         });
         subMenu.addItem((subItem) => {
           subItem.setTitle("Export summary").setIcon("file-text").onClick(() => {
-            void plugin.exportSummary(view.file);
+            void exportSummary(plugin, view.file);
           });
         });
       });
@@ -20226,12 +20238,12 @@ function registerMenus(plugin) {
         if (plugin.isScript(file)) {
           menu.addItem((item) => {
             item.setTitle("Export to .docx").setIcon("file-output").onClick(async () => {
-              await plugin.exportFileToDocx(file);
+              await exportFileToDocx(plugin, file);
             });
           });
           menu.addItem((item) => {
             item.setTitle("Export summary").setIcon("file-text").onClick(async () => {
-              await plugin.exportSummary(file);
+              await exportSummary(plugin, file);
             });
           });
         }
@@ -20245,7 +20257,7 @@ function registerMenus(plugin) {
           } else if (file instanceof import_obsidian5.TFile) {
             folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
           }
-          await plugin.createNewScript(folderPath);
+          await createNewScript(plugin, folderPath);
         });
       });
     })
@@ -20278,10 +20290,283 @@ function registerMenus(plugin) {
 function addMenuItem(menu, title, icon, editor, marker, plugin) {
   if (menu instanceof import_obsidian5.Menu) {
     menu.addItem((item) => {
-      item.setTitle(title).setIcon(icon).onClick(() => plugin.toggleLinePrefix(editor, marker));
+      item.setTitle(title).setIcon(icon).onClick(() => toggleLinePrefix(plugin, editor, marker));
     });
   }
 }
+function renumberScenes(plugin, editor) {
+  const lineCount = editor.lineCount();
+  let sceneCounter = 0;
+  for (let i = 0; i < lineCount; i++) {
+    const line = editor.getLine(i);
+    const trimmed = line.trim();
+    const match = trimmed.match(SCENE_REGEX);
+    if (match) {
+      sceneCounter++;
+      const sceneNumStr = sceneCounter.toString().padStart(2, "0") + ". ";
+      let contentWithoutNumber = trimmed;
+      if (match[1]) {
+        contentWithoutNumber = trimmed.replace(/^\d+[.\s]\s*/, "");
+      }
+      contentWithoutNumber = contentWithoutNumber.trim();
+      const newLine = sceneNumStr + contentWithoutNumber;
+      if (newLine !== line) {
+        editor.setLine(i, newLine);
+      }
+    }
+  }
+}
+function toggleLinePrefix(plugin, editor, prefix) {
+  const cursor = editor.getCursor();
+  const lineContent = editor.getLine(cursor.line);
+  let newLineContent = lineContent;
+  let hasMarker = false;
+  for (const marker of Object.values(SCRIPT_MARKERS)) {
+    if (lineContent.trim().startsWith(marker)) {
+      const matchIndex = lineContent.indexOf(marker);
+      const before = lineContent.substring(0, matchIndex);
+      const after = lineContent.substring(matchIndex + marker.length);
+      if (marker === prefix) {
+        newLineContent = before + after;
+        hasMarker = true;
+      } else {
+        newLineContent = before + prefix + after;
+        hasMarker = true;
+      }
+      break;
+    }
+  }
+  if (!hasMarker)
+    newLineContent = prefix + lineContent;
+  editor.setLine(cursor.line, newLineContent);
+}
+function insertText(editor, text, replaceLine = false) {
+  const cursor = editor.getCursor();
+  const lineContent = editor.getLine(cursor.line);
+  if (replaceLine) {
+    editor.setLine(cursor.line, text);
+  } else {
+    editor.setLine(cursor.line, text + lineContent);
+  }
+}
+async function exportFileToDocx(plugin, file) {
+  var _a;
+  try {
+    const content = await plugin.app.vault.read(file);
+    const baseName = file.basename;
+    const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
+    const fileName = `${baseName}.docx`;
+    const filePath = folderPath === "/" ? fileName : `${folderPath}/${fileName}`;
+    new import_obsidian5.Notice(`Exporting ${fileName}...`);
+    const buffer2 = await DocxExporter.exportToDocx(content, baseName);
+    const arrayBuffer = buffer2.buffer.slice(buffer2.byteOffset, buffer2.byteOffset + buffer2.byteLength);
+    await plugin.app.vault.adapter.writeBinary(filePath, arrayBuffer);
+    new import_obsidian5.Notice(`Successfully exported to ${baseName}.docx`);
+  } catch (error) {
+    console.error("Export to DOCX failed:", error);
+    new import_obsidian5.Notice(`Failed to export to DOCX: ${error.message}`);
+  }
+}
+async function exportSummary(plugin, file) {
+  var _a;
+  try {
+    const content = await plugin.app.vault.read(file);
+    const lines = content.split("\n");
+    const baseName = file.basename;
+    const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
+    const summaryFileName = `${baseName} Summary.md`;
+    const summaryFilePath = folderPath === "/" ? summaryFileName : `${folderPath}/${summaryFileName}`;
+    let summaryLines = [];
+    let currentScene = null;
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("# ")) {
+        summaryLines.push(trimmed + "\n");
+      } else if (trimmed.startsWith("## ")) {
+        summaryLines.push("\n" + trimmed + "\n");
+      } else if (SCENE_REGEX.test(trimmed)) {
+        const match = trimmed.match(SCENE_REGEX);
+        if (match && match[1]) {
+          currentScene = match[1].trim();
+        } else {
+          currentScene = trimmed;
+        }
+      } else if (currentScene && SUMMARY_REGEX.test(trimmed)) {
+        const summaryMatch = trimmed.match(SUMMARY_REGEX);
+        if (summaryMatch) {
+          const sceneSummary = summaryMatch[1].trim();
+          summaryLines.push(`${currentScene} ${sceneSummary}
+`);
+          currentScene = null;
+        }
+      }
+    });
+    if (summaryLines.length === 0) {
+      new import_obsidian5.Notice("No scenes with summaries found in the script.");
+      return;
+    }
+    const finalContent = summaryLines.join("\n");
+    const existingFile = plugin.app.vault.getAbstractFileByPath(summaryFilePath);
+    if (existingFile instanceof import_obsidian5.TFile) {
+      await plugin.app.vault.modify(existingFile, finalContent);
+    } else {
+      await plugin.app.vault.create(summaryFilePath, finalContent);
+    }
+    new import_obsidian5.Notice(`Successfully exported summary to ${summaryFileName}`);
+    const newFile = plugin.app.vault.getAbstractFileByPath(summaryFilePath);
+    if (newFile instanceof import_obsidian5.TFile) {
+      const leaf = plugin.app.workspace.getLeaf(false);
+      await leaf.openFile(newFile);
+    }
+  } catch (error) {
+    console.error("Export summary failed:", error);
+    new import_obsidian5.Notice(`Failed to export summary: ${error.message}`);
+  }
+}
+async function createNewScript(plugin, folderPath) {
+  var _a;
+  let targetFolder = folderPath;
+  if (!targetFolder) {
+    const activeFile = plugin.app.workspace.getActiveFile();
+    targetFolder = activeFile ? ((_a = activeFile.parent) == null ? void 0 : _a.path) || "/" : "/";
+  }
+  const baseName = "Untitled Script";
+  let fileName = `${baseName}.md`;
+  let filePath = targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
+  let counter = 1;
+  while (await plugin.app.vault.adapter.exists(filePath)) {
+    fileName = `${baseName} ${counter}.md`;
+    filePath = targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
+    counter++;
+  }
+  let fileContent = `---
+cssclasses:
+- script
+---
+
+
+# YOUR TITLE HERE
+
+Author: Your Name.
+Genre: Monster in the House/Out of the Bottle/Superhero/etc.
+
+**Screenplay syntax**: Basic rules for Fountain-compatible formatting.
+- Scene Heading: 'INT. / EXT.' will automatic bold & uppercase.
+- Character: '@NAME' \\ 'NAME' \\ 'NAME:', will centered. "@" is hidden in preview.'
+- Dialogue: Text below Character, will automatically indented.
+- Parenthetical: '(emotion) / OS: / VO:', will automatic centered & italic.
+- Transition: 'CUT TO: / FADE IN', will right aligned.
+
+To see the Script as a Story Board, choose **Open Story Board**.
+
+In **Story Board** mode, you can press **AI Beat Summary**, auto generate all scene's summary or drag the cards of Story board.
+
+---
+
+## Act One
+
+FADE IN:
+
+EXT. scene 01
+%%summary: summary of this scene.%%
+%%color: blue%%
+
+Here is Action description. Here is Action description. Here is Action description. 
+Here is Action description. 
+
+BOB:
+It is too hard. I will never make
+
+MARY:
+You can make it.
+
+CUT TO:
+
+INT. scene 02
+
+Here is Action description. Here is Action description. 
+
+BOB:
+It is too hard. I will never make
+
+MARY:
+You can make it.
+`;
+  const templateFile = plugin.app.vault.getAbstractFileByPath("Script Templet.md");
+  if (templateFile instanceof import_obsidian5.TFile) {
+    fileContent = await plugin.app.vault.read(templateFile);
+  }
+  const newFile = await plugin.app.vault.create(filePath, fileContent);
+  const leaf = plugin.app.workspace.getLeaf(false);
+  await leaf.openFile(newFile);
+  plugin.app.workspace.trigger("rename", newFile, newFile.path);
+}
+
+// suggest.ts
+var import_obsidian6 = require("obsidian");
+function extractCharacterNames(content, plugin) {
+  const charCounts = /* @__PURE__ */ new Map();
+  const lines = content.split("\n");
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.length > 50)
+      return;
+    const format = plugin.detectExplicitFormat(trimmed);
+    if (!format || format.typeKey !== "CHARACTER")
+      return;
+    let name = "";
+    if (trimmed.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+      name = trimmed.substring(1).trim();
+    } else if (CHARACTER_COLON_REGEX.test(trimmed)) {
+      const match = trimmed.match(CHARACTER_COLON_REGEX);
+      if (match)
+        name = match[1].trim();
+    } else if (CHARACTER_CAPS_REGEX2.test(trimmed)) {
+      name = trimmed.split("(")[0].trim();
+    }
+    name = name.replace(/[:：]+$/, "").trim();
+    if (name && name.length > 0) {
+      charCounts.set(name, (charCounts.get(name) || 0) + 1);
+    }
+  });
+  return charCounts;
+}
+var CharacterSuggest = class extends import_obsidian6.EditorSuggest {
+  constructor(app, plugin) {
+    super(app);
+    this.plugin = plugin;
+  }
+  onTrigger(cursor, editor, file) {
+    if (!this.plugin.isScript(file))
+      return null;
+    const line = editor.getLine(cursor.line);
+    const sub = line.substring(0, cursor.ch);
+    const match = sub.match(/@([^ ]*)$/);
+    if (match) {
+      return {
+        start: { line: cursor.line, ch: match.index },
+        end: { line: cursor.line, ch: cursor.ch },
+        query: match[1]
+      };
+    }
+    return null;
+  }
+  async getSuggestions(context) {
+    const content = await this.app.vault.read(context.file);
+    const charMap = extractCharacterNames(content, this.plugin);
+    const query = context.query.toLowerCase();
+    return Array.from(charMap.entries()).filter(([name]) => name.toLowerCase().includes(query)).sort((a, b) => b[1] - a[1]).map(([name]) => name).slice(0, 10);
+  }
+  renderSuggestion(suggestion, el) {
+    el.createEl("div", { text: suggestion });
+  }
+  selectSuggestion(suggestion, event) {
+    const { context } = this;
+    if (context) {
+      context.editor.replaceRange(`@${suggestion}`, context.start, context.end);
+    }
+  }
+};
 
 // main.ts
 var SCRIPT_MARKERS = {
@@ -20314,7 +20599,7 @@ var LP_CLASSES = {
   NOTE: "lp-note",
   SYMBOL: "lp-marker-symbol"
 };
-var ScriptEditorPlugin4 = class extends import_obsidian6.Plugin {
+var ScriptEditorPlugin5 = class extends import_obsidian7.Plugin {
   constructor() {
     super(...arguments);
     this.lastActiveFile = null;
@@ -20472,281 +20757,11 @@ var ScriptEditorPlugin4 = class extends import_obsidian6.Plugin {
     }
     return null;
   }
-  renumberScenes(editor) {
-    const lineCount = editor.lineCount();
-    let sceneCounter = 0;
-    for (let i = 0; i < lineCount; i++) {
-      const line = editor.getLine(i);
-      const trimmed = line.trim();
-      const match = trimmed.match(SCENE_REGEX);
-      if (match) {
-        sceneCounter++;
-        const sceneNumStr = sceneCounter.toString().padStart(2, "0") + ". ";
-        let contentWithoutNumber = trimmed;
-        if (match[1]) {
-          contentWithoutNumber = trimmed.replace(/^\d+[.\s]\s*/, "");
-        }
-        contentWithoutNumber = contentWithoutNumber.trim();
-        const newLine = sceneNumStr + contentWithoutNumber;
-        if (newLine !== line) {
-          editor.setLine(i, newLine);
-        }
-      }
-    }
-  }
-  toggleLinePrefix(editor, prefix) {
-    const cursor = editor.getCursor();
-    const lineContent = editor.getLine(cursor.line);
-    let newLineContent = lineContent;
-    let hasMarker = false;
-    for (const marker of Object.values(SCRIPT_MARKERS)) {
-      if (lineContent.trim().startsWith(marker)) {
-        const matchIndex = lineContent.indexOf(marker);
-        const before = lineContent.substring(0, matchIndex);
-        const after = lineContent.substring(matchIndex + marker.length);
-        if (marker === prefix) {
-          newLineContent = before + after;
-          hasMarker = true;
-        } else {
-          newLineContent = before + prefix + after;
-          hasMarker = true;
-        }
-        break;
-      }
-    }
-    if (!hasMarker)
-      newLineContent = prefix + lineContent;
-    editor.setLine(cursor.line, newLineContent);
-  }
-  insertText(editor, text, replaceLine = false) {
-    const cursor = editor.getCursor();
-    const lineContent = editor.getLine(cursor.line);
-    if (replaceLine) {
-      editor.setLine(cursor.line, text);
-    } else {
-      editor.setLine(cursor.line, text + lineContent);
-    }
-  }
-  async exportFileToDocx(file) {
-    var _a;
-    try {
-      const content = await this.app.vault.read(file);
-      const baseName = file.basename;
-      const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
-      const fileName = `${baseName}.docx`;
-      const filePath = folderPath === "/" ? fileName : `${folderPath}/${fileName}`;
-      new import_obsidian6.Notice(`Exporting ${fileName}...`);
-      const buffer2 = await DocxExporter.exportToDocx(content, baseName);
-      const arrayBuffer = buffer2.buffer.slice(buffer2.byteOffset, buffer2.byteOffset + buffer2.byteLength);
-      await this.app.vault.adapter.writeBinary(filePath, arrayBuffer);
-      new import_obsidian6.Notice(`Successfully exported to ${baseName}.docx`);
-    } catch (error) {
-      console.error("Export to DOCX failed:", error);
-      new import_obsidian6.Notice(`Failed to export to DOCX: ${error.message}`);
-    }
-  }
-  async exportSummary(file) {
-    var _a;
-    try {
-      const content = await this.app.vault.read(file);
-      const lines = content.split("\n");
-      const baseName = file.basename;
-      const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
-      const summaryFileName = `${baseName} Summary.md`;
-      const summaryFilePath = folderPath === "/" ? summaryFileName : `${folderPath}/${summaryFileName}`;
-      let summaryLines = [];
-      let currentScene = null;
-      lines.forEach((line) => {
-        const trimmed = line.trim();
-        if (trimmed.startsWith("# ")) {
-          summaryLines.push(trimmed + "\n");
-        } else if (trimmed.startsWith("## ")) {
-          summaryLines.push("\n" + trimmed + "\n");
-        } else if (SCENE_REGEX.test(trimmed)) {
-          const match = trimmed.match(SCENE_REGEX);
-          if (match && match[1]) {
-            currentScene = match[1].trim();
-          } else {
-            currentScene = trimmed;
-          }
-        } else if (currentScene && SUMMARY_REGEX.test(trimmed)) {
-          const summaryMatch = trimmed.match(SUMMARY_REGEX);
-          if (summaryMatch) {
-            const sceneSummary = summaryMatch[1].trim();
-            summaryLines.push(`${currentScene} ${sceneSummary}
-`);
-            currentScene = null;
-          }
-        }
-      });
-      if (summaryLines.length === 0) {
-        new import_obsidian6.Notice("No scenes with summaries found in the script.");
-        return;
-      }
-      const finalContent = summaryLines.join("\n");
-      const existingFile = this.app.vault.getAbstractFileByPath(summaryFilePath);
-      if (existingFile instanceof import_obsidian6.TFile) {
-        await this.app.vault.modify(existingFile, finalContent);
-      } else {
-        await this.app.vault.create(summaryFilePath, finalContent);
-      }
-      new import_obsidian6.Notice(`Successfully exported summary to ${summaryFileName}`);
-      const newFile = this.app.vault.getAbstractFileByPath(summaryFilePath);
-      if (newFile instanceof import_obsidian6.TFile) {
-        const leaf = this.app.workspace.getLeaf(false);
-        await leaf.openFile(newFile);
-      }
-    } catch (error) {
-      console.error("Export summary failed:", error);
-      new import_obsidian6.Notice(`Failed to export summary: ${error.message}`);
-    }
-  }
-  async createNewScript(folderPath) {
-    var _a;
-    let targetFolder = folderPath;
-    if (!targetFolder) {
-      const activeFile = this.app.workspace.getActiveFile();
-      targetFolder = activeFile ? ((_a = activeFile.parent) == null ? void 0 : _a.path) || "/" : "/";
-    }
-    const baseName = "Untitled Script";
-    let fileName = `${baseName}.md`;
-    let filePath = targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
-    let counter = 1;
-    while (await this.app.vault.adapter.exists(filePath)) {
-      fileName = `${baseName} ${counter}.md`;
-      filePath = targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
-      counter++;
-    }
-    let fileContent = `---
-cssclasses:
-- script
----
-
-
-# YOUR TITLE HERE
-
-Author: Your Name.
-Genre: Monster in the House/Out of the Bottle/Superhero/etc.
-
-**Screenplay syntax**: Basic rules for Fountain-compatible formatting.
-- Scene Heading: 'INT. / EXT.' will automatic bold & uppercase.
-- Character: '@NAME' \\ 'NAME' \\ 'NAME:', will centered. "@" is hidden in preview.'
-- Dialogue: Text below Character, will automatically indented.
-- Parenthetical: '(emotion) / OS: / VO:', will automatic centered & italic.
-- Transition: 'CUT TO: / FADE IN', will right aligned.
-
-To see the Script as a Story Board, choose **Open Story Board**.
-
-In **Story Board** mode, you can press **AI Beat Summary**, auto generate all scene's summary or drag the cards of Story board.
-
----
-
-## Act One
-
-FADE IN:
-
-EXT. scene 01
-%%summary: summary of this scene.%%
-%%color: blue%%
-
-Here is Action description. Here is Action description. Here is Action description. 
-Here is Action description. 
-
-BOB:
-It is too hard. I will never make
-
-MARY:
-You can make it.
-
-CUT TO:
-
-INT. scene 02
-
-Here is Action description. Here is Action description. 
-
-BOB:
-It is too hard. I will never make
-
-MARY:
-You can make it.
-`;
-    const templateFile = this.app.vault.getAbstractFileByPath("Script Templet.md");
-    if (templateFile instanceof import_obsidian6.TFile) {
-      fileContent = await this.app.vault.read(templateFile);
-    }
-    const newFile = await this.app.vault.create(filePath, fileContent);
-    const leaf = this.app.workspace.getLeaf(false);
-    await leaf.openFile(newFile);
-    this.app.workspace.trigger("rename", newFile, newFile.path);
-  }
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
   }
   async saveSettings() {
     await this.saveData(this.settings);
-  }
-};
-function extractCharacterNames(content, plugin) {
-  const charCounts = /* @__PURE__ */ new Map();
-  const lines = content.split("\n");
-  lines.forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.length > 50)
-      return;
-    const format = plugin.detectExplicitFormat(trimmed);
-    if (!format || format.typeKey !== "CHARACTER")
-      return;
-    let name = "";
-    if (trimmed.startsWith(SCRIPT_MARKERS.CHARACTER)) {
-      name = trimmed.substring(1).trim();
-    } else if (CHARACTER_COLON_REGEX.test(trimmed)) {
-      const match = trimmed.match(CHARACTER_COLON_REGEX);
-      if (match)
-        name = match[1].trim();
-    } else if (CHARACTER_CAPS_REGEX2.test(trimmed)) {
-      name = trimmed.split("(")[0].trim();
-    }
-    name = name.replace(/[:：]+$/, "").trim();
-    if (name && name.length > 0) {
-      charCounts.set(name, (charCounts.get(name) || 0) + 1);
-    }
-  });
-  return charCounts;
-}
-var CharacterSuggest = class extends import_obsidian6.EditorSuggest {
-  constructor(app, plugin) {
-    super(app);
-    this.plugin = plugin;
-  }
-  onTrigger(cursor, editor, file) {
-    if (!this.plugin.isScript(file))
-      return null;
-    const line = editor.getLine(cursor.line);
-    const sub = line.substring(0, cursor.ch);
-    const match = sub.match(/@([^ ]*)$/);
-    if (match) {
-      return {
-        start: { line: cursor.line, ch: match.index },
-        end: { line: cursor.line, ch: cursor.ch },
-        query: match[1]
-      };
-    }
-    return null;
-  }
-  async getSuggestions(context) {
-    const content = await this.app.vault.read(context.file);
-    const charMap = extractCharacterNames(content, this.plugin);
-    const query = context.query.toLowerCase();
-    return Array.from(charMap.entries()).filter(([name]) => name.toLowerCase().includes(query)).sort((a, b) => b[1] - a[1]).map(([name]) => name).slice(0, 10);
-  }
-  renderSuggestion(suggestion, el) {
-    el.createEl("div", { text: suggestion });
-  }
-  selectSuggestion(suggestion, event) {
-    const { context } = this;
-    if (context) {
-      context.editor.replaceRange(`@${suggestion}`, context.start, context.end);
-    }
   }
 };
 /*! Bundled license information:
