@@ -19860,7 +19860,11 @@ function registerReadingView(plugin) {
           currentType = "DIALOGUE";
         }
         const lineEl = node.createDiv({ cls: cssClass });
-        lineEl.setText(trimmedLine);
+        let displayText = trimmedLine;
+        if (format && format.removePrefix) {
+          displayText = trimmedLine.substring(format.markerLength).trim();
+        }
+        lineEl.setText(displayText);
         lineEl.style.margin = "0";
         previousType = currentType;
       });

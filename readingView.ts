@@ -66,7 +66,12 @@ export function registerReadingView(plugin: ScriptEditorPlugin) {
                 }
 
                 const lineEl = node.createDiv({ cls: cssClass });
-                lineEl.setText(trimmedLine);
+
+                let displayText = trimmedLine;
+                if (format && format.removePrefix) {
+                    displayText = trimmedLine.substring(format.markerLength).trim();
+                }
+                lineEl.setText(displayText);
 
                 // 移除內容 Div 的預設間距以免疊加
                 lineEl.style.margin = "0";
