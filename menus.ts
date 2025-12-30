@@ -90,6 +90,14 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
             menu.addSeparator();
 
             menu.addItem((item) => {
+                item.setTitle("Open Story Board")
+                    .setIcon("layout-grid")
+                    .onClick(() => {
+                        void plugin.openStoryBoard(view.leaf, view.file!);
+                    });
+            });
+
+            menu.addItem((item) => {
                 item.setTitle("AI Rewrite Scene")
                     .setIcon("sparkles")
                     .onClick(() => aiSummaryAndRewrite(plugin, editor));

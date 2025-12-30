@@ -156,7 +156,7 @@
         font-weight: 700 !important;
         text-transform: uppercase !important;
         text-align: left !important;
-        margin-top: 2em !important;
+        margin-top: 3em !important;
         margin-bottom: 0.5em !important;
         display: block !important;
         color: var(--text-normal) !important;
@@ -716,18 +716,6 @@
     }
 }
 
-/* Base Responsive Font & Margins */
-.is-mobile .fountain,
-.is-mobile .script {
-    font-size: 1.1em;
-    --script-dialogue-margin: 2em;
-}
-
-/* Live Preview Content Adjustment */
-.is-mobile .fountain .cm-content,
-.is-mobile .script .cm-content {
-    font-size: 1.1em;
-}
 
 /* Storyboard Card Font Adjustment */
 .is-mobile .script-editor-storyboard-container {
