@@ -19285,16 +19285,6 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     this.file = file;
     await this.updateView();
   }
-  async setState(state2, result) {
-    if (state2.file) {
-      const file = this.app.vault.getAbstractFileByPath(state2.file);
-      if (file instanceof import_obsidian2.TFile) {
-        this.file = file;
-      }
-    }
-    await super.setState(state2, result);
-    await this.updateView();
-  }
   async onOpen() {
     this.addAction("pencil", "Live View", async () => {
       if (this.file) {
@@ -20687,6 +20677,23 @@ var ScriptEditorPlugin5 = class extends import_obsidian7.Plugin {
     this.app.metadataCache.on("changed", () => {
       this.refreshStoryBoard(true);
     });
+    this.registerEvent(
+      this.app.workspace.on("file-open", (file) => {
+        if (file instanceof import_obsidian7.TFile) {
+          const leaves = this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
+          leaves.forEach(async (leaf) => {
+            if (leaf.view instanceof StoryBoardView) {
+              if (this.isScript(file)) {
+                await leaf.view.setFile(file);
+              } else {
+                leaf.view.file = null;
+                leaf.view.updateView();
+              }
+            }
+          });
+        }
+      })
+    );
     this.registerEditorSuggest(new CharacterSuggest(this.app, this));
   }
   refreshStoryBoard(force = false) {

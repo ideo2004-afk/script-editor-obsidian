@@ -28,17 +28,6 @@ export class StoryBoardView extends ItemView {
         await this.updateView();
     }
 
-    async setState(state: any, result: any): Promise<void> {
-        if (state.file) {
-            const file = this.app.vault.getAbstractFileByPath(state.file);
-            if (file instanceof TFile) {
-                this.file = file;
-            }
-        }
-        await super.setState(state, result);
-        await this.updateView();
-    }
-
     async onOpen() {
         this.addAction("pencil", "Live View", async () => {
             if (this.file) {

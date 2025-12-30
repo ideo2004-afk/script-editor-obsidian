@@ -114,6 +114,26 @@ export default class ScriptEditorPlugin extends Plugin {
             this.refreshStoryBoard(true);
         })
 
+        // 6. 動態同步：當打開新檔案時，自動更新 Story Board
+        this.registerEvent(
+            this.app.workspace.on('file-open', (file) => {
+                if (file instanceof TFile) {
+                    const leaves = this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
+                    leaves.forEach(async leaf => {
+                        if (leaf.view instanceof StoryBoardView) {
+                            if (this.isScript(file)) {
+                                await leaf.view.setFile(file);
+                            } else {
+                                // 如果不是劇本，清空 Story Board
+                                leaf.view.file = null;
+                                leaf.view.updateView();
+                            }
+                        }
+                    });
+                }
+            })
+        );
+
 
         // 8. Register Character Suggest (Editor Logic)
         this.registerEditorSuggest(new CharacterSuggest(this.app, this));
