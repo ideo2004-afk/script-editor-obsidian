@@ -53,6 +53,7 @@ Requirements:
 2. The summary MUST be in the same language and script (e.g., Traditional Chinese, English, Japanese) as the provided Scene Content.
 3. CRITICAL: If the input is in Traditional Chinese (繁體中文), you must respond in Traditional Chinese. Do NOT use Simplified Chinese (簡體中文).
 4. Do not include any other text, intros, explanations, or quotes.
+5. CRITICAL: Return PLAIN TEXT ONLY. Do NOT use HTML tags (e.g., <b>, <i>) or Markdown bolding (**).
 Format: Just the summary text.
 
 Scene Content:
@@ -72,6 +73,7 @@ Requirements:
 3. Provide initial script content (Action/Dialogue) in standard screenplay format.
 4. ALL content (Heading, Summary, Script) MUST be in the same language and script as the provided Context.
 5. CRITICAL: If the input is in Traditional Chinese (繁體中文), you must respond in Traditional Chinese. Do NOT use Simplified Chinese (簡體中文).
+6. CRITICAL: Return PLAIN TEXT ONLY. Do NOT use HTML tags (e.g., <b>, <i>) or Markdown bolding (**). All character names and dialogue must be plain text.
 
 Format your response as:
 TITLE: [Heading]
@@ -100,7 +102,8 @@ Requirements:
 1. Provide exactly ONE concise sentence per marked block.
 2. The summary MUST be in the same language and script as the block's content.
 3. CRITICAL: If the input is in Traditional Chinese (繁體中文), you must respond in Traditional Chinese. Do NOT use Simplified Chinese (簡體中文).
-4. Respond ONLY with a list of summaries in the following format:
+4. CRITICAL: Return PLAIN TEXT ONLY. Do NOT use HTML tags or Markdown bolding.
+5. Respond ONLY with a list of summaries in the following format:
 BLOCK X: Summary text
 
 Screenplay:
@@ -123,7 +126,8 @@ Requirements:
 6. Provide initial script content (Action/Dialogue) in standard screenplay format.
 7. DO NOT include the Scene Heading (e.g., INT. / EXT.) in the "CONTENT" section, as it is already kept by the editor.
 8. CRITICAL: If the input is in Traditional Chinese (繁體中文), you must respond in Traditional Chinese. Do NOT use Simplified Chinese (簡體中文).
-9. Return ONLY the following format (no intros or outros):
+9. CRITICAL: Return PLAIN TEXT ONLY. Do NOT use HTML tags (e.g., <b>, <i>) or Markdown bolding (**). All character names and dialogue must be plain text.
+10. Return ONLY the following format (no intros or outros):
 
 SUMMARY: [One sentence summary]
 CONTENT:

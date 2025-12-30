@@ -438,52 +438,67 @@ cssclasses:
 - script
 ---
 
-
-# YOUR TITLE HERE
+# Title: SAVE CAT
 
 Author: Your Name.
 Genre: Monster in the House/Out of the Bottle/Superhero/etc.
 
-**Screenplay syntax**: Basic rules for Fountain-compatible formatting.
-- Scene Heading: 'INT. / EXT.' will automatic bold & uppercase.
-- Character: '@NAME' \\ 'NAME' \\ 'NAME:', will centered. "@" is hidden in preview.'
-- Dialogue: Text below Character, will automatically indented.
-- Parenthetical: '(emotion) / OS: / VO:', will automatic centered & italic.
-- Transition: 'CUT TO: / FADE IN', will right aligned.
+**Script Editor** is an AI Powered Fountain-compatible screenplay editor with intelligent formatting detection, Story Board, AI aid rewrite and CJK support (Chinese, Japanese, Korean).
 
-To see the Script as a Story Board, choose **Open Story Board**.
-
-In **Story Board** mode, you can press **AI Beat Summary**, auto generate all scene's summary or drag the cards of Story board.
-
----
+FADE IN
 
 ## Act One
 
-FADE IN:
+EXT. Opening scene (1)
+**Script Editor** does not affect other .md files. You can create new .md files pre-configured with this **frontmatter** ( cssclasses: script or fountain).
 
-EXT. scene 01
-%%summary: summary of this scene.%%
-%%color: blue%%
+%%note: or in Context Menu, Right-click on any folder and select New script.%%
 
-Here is Action description. Here is Action description. Here is Action description.
-
-BOB:
-It is too hard. I will never make it.
+@BOB
+Text below Character, will automatically Dialogue.
 
 MARY:
-You can make it.
+(emotion)
+And here.
 
-CUT TO:
+.Theme Stated (5)
+**Story Board Mode** is visual grid view of your screenplay's scenes with full drag-and-drop support.
 
-INT. scene 02
+.Set-Up (1-10)
+In **Story Board Mode**, you can use AI aid for summaries. You need to enter your **Gemini API Key** in the settings page first.
 
-Here is Action description. Here is Action description. 
+.Catalyst (12)
+**AI Rewrite Scene**: Right-click anywhere in the editor to rewrite your rough notes into a professional screenplay scene based on surrounding context.
 
-BOB:
-It is too hard. I will never make it.
+INT. Debate (12-25)
+Type \`@\` anywhere in your script, can quickly insert character names with frequency-based autocomplete.
 
-MARY:
-You can make it.
+%%note: There are more features, you can find them by yourself. Have fun... %%
+
+FADE OUT
+
+
+## Act Two (25)
+
+.B Story (30)
+
+.Fun and Games (30-55)
+
+
+## Midpoint (55)
+
+.Bad Guys Close In (55-75)
+
+.All Is Lost (75)
+
+.Dark Night of the Soul (75-85)
+
+
+## Act Three (85)
+
+.Finale (85-110)
+
+.Final Image (110)
 `;
 
     const templateFile = plugin.app.vault.getAbstractFileByPath('Script Templet.md');
