@@ -18,7 +18,7 @@ export class GeminiService {
         }
 
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${this.apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
             const response = await requestUrl({
                 url: url,
                 method: 'POST',
