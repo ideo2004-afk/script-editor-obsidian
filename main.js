@@ -19918,7 +19918,7 @@ function livePreviewExtension(plugin) {
           } else if (NOTE_REGEX.test(trimmed)) {
             lpClass = LP_CLASSES.NOTE;
             currentType = "EMPTY";
-            const prefixMatch = text.match(/^%%note:\s*/i);
+            const prefixMatch = text.match(/^\s*%%note:\s*/i);
             if (prefixMatch) {
               const prefixLen = prefixMatch[0].length;
               const contentStart = line.from + prefixLen;
@@ -20614,15 +20614,15 @@ var SCRIPT_MARKERS = {
   CHARACTER: "@",
   PARENTHETICAL: "("
 };
-var SCENE_REGEX = /^(###\s+|(?:\d+[.\s]\s*)?(?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
-var TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
-var PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
-var OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
-var CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?)([:：])\s*$/;
-var CHARACTER_CAPS_REGEX2 = /^(?=.*[A-Z])[A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?$/;
-var COLOR_TAG_REGEX = /^%%color:\s*(red|blue|green|yellow|purple|none|无|無)\s*%%$/i;
-var SUMMARY_REGEX = /^%%summary:\s*(.*?)\s*%%$/i;
-var NOTE_REGEX = /^%%note:\s*(.*)%%$/i;
+var SCENE_REGEX = /^\s*(###\s+|(?:\d+[.\s]\s*)?(?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
+var TRANSITION_REGEX = /^\s*((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
+var PARENTHETICAL_REGEX = /^\s*(\(|（).+(\)|）)\s*$/i;
+var OS_DIALOGUE_REGEX = /^\s*(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
+var CHARACTER_COLON_REGEX = /^\s*([\u4e00-\u9fa5A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?)([:：])\s*$/;
+var CHARACTER_CAPS_REGEX2 = /^\s*(?=.*[A-Z])[A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?$/;
+var COLOR_TAG_REGEX = /^\s*%%color:\s*(red|blue|green|yellow|purple|none|无|無)\s*%%$/i;
+var SUMMARY_REGEX = /^\s*%%summary:\s*(.*?)\s*%%$/i;
+var NOTE_REGEX = /^\s*%%note:\s*(.*)%%$/i;
 var CSS_CLASSES = {
   SCENE: "script-scene",
   CHARACTER: "script-character",

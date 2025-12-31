@@ -5,23 +5,28 @@
    ------------------------------------------------------------------ */
 .fountain,
 .script {
-    --script-dialogue-margin: 7em;
+    --script-dialogue-margin: 8em;
     --script-font-size: 1em;
     --script-line-height: 1.5;
     --script-note-width: 280px;
+}
 
-    /* Mobile (Phone) Specifics */
-    &.is-phone {
-        --script-dialogue-margin: 1.5em;
-        --script-font-size: 1.1em;
-    }
+/* 1a. Mobile (Phone) Specifics */
+.is-phone .fountain,
+.is-phone .script {
+    --script-dialogue-margin: 1.5em;
+    --script-font-size: 1.1em;
+}
 
-    /* Tablet (iPad) Specifics */
-    &.is-tablet {
-        --script-dialogue-margin: 4em;
-        --script-font-size: 1.1em;
-    }
+/* 1b. Tablet (iPad) Specifics */
+.is-tablet .fountain,
+.is-tablet .script {
+    --script-dialogue-margin: 4em;
+    --script-font-size: 1.2em;
+}
 
+.fountain,
+.script {
     font-size: var(--script-font-size);
     line-height: var(--script-line-height);
 
@@ -253,12 +258,11 @@
 }
 
 .storyboard-card-title {
-    font-weight: 600;
-    font-size: 0.8em;
+    font-size: 0.6em;
+    color: var(--text-muted);
     margin-bottom: 10px;
     padding-left: 20px;
     padding-right: 35px;
-    color: var(--text-normal);
     border-bottom: 1px solid var(--background-modifier-border);
     padding-bottom: 8px;
     white-space: nowrap;
@@ -268,7 +272,6 @@
 
 .storyboard-card-summary {
     font-size: 0.8em;
-    color: var(--text-muted);
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 6;

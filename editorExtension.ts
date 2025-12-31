@@ -73,7 +73,7 @@ export function livePreviewExtension(plugin: ScriptEditorPlugin) {
                         currentType = 'EMPTY';
 
                         // 找到標籤的結束位置與內容的結束位置
-                        const prefixMatch = text.match(/^%%note:\s*/i);
+                        const prefixMatch = text.match(/^\s*%%note:\s*/i);
                         if (prefixMatch) {
                             const prefixLen = prefixMatch[0].length;
                             const contentStart = line.from + prefixLen;

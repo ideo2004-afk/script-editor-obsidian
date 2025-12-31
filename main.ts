@@ -14,15 +14,15 @@ export const SCRIPT_MARKERS = {
 };
 
 // Regex Definitions
-export const SCENE_REGEX = /^(###\s+|(?:\d+[.\s]\s*)?(?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
-export const TRANSITION_REGEX = /^((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
-export const PARENTHETICAL_REGEX = /^(\(|（).+(\)|）)\s*$/i;
-export const OS_DIALOGUE_REGEX = /^(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
-export const CHARACTER_COLON_REGEX = /^([\u4e00-\u9fa5A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?)([:：])\s*$/;
-export const CHARACTER_CAPS_REGEX = /^(?=.*[A-Z])[A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?$/;
-export const COLOR_TAG_REGEX = /^%%color:\s*(red|blue|green|yellow|purple|none|无|無)\s*%%$/i;
-export const SUMMARY_REGEX = /^%%summary:\s*(.*?)\s*%%$/i;
-export const NOTE_REGEX = /^%%note:\s*(.*)%%$/i;
+export const SCENE_REGEX = /^\s*(###\s+|(?:\d+[.\s]\s*)?(?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
+export const TRANSITION_REGEX = /^\s*((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
+export const PARENTHETICAL_REGEX = /^\s*(\(|（).+(\)|）)\s*$/i;
+export const OS_DIALOGUE_REGEX = /^\s*(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
+export const CHARACTER_COLON_REGEX = /^\s*([\u4e00-\u9fa5A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?)([:：])\s*$/;
+export const CHARACTER_CAPS_REGEX = /^\s*(?=.*[A-Z])[A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?$/;
+export const COLOR_TAG_REGEX = /^\s*%%color:\s*(red|blue|green|yellow|purple|none|无|無)\s*%%$/i;
+export const SUMMARY_REGEX = /^\s*%%summary:\s*(.*?)\s*%%$/i;
+export const NOTE_REGEX = /^\s*%%note:\s*(.*)%%$/i;
 
 // CSS Classes (Reading Mode / PDF)
 export const CSS_CLASSES = {
