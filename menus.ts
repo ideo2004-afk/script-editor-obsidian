@@ -93,30 +93,6 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
         app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
             if (!plugin.isScript(view.file)) return;
 
-            menu.addSeparator();
-
-            menu.addItem((item) => {
-                item.setTitle("Open Story Board")
-                    .setIcon("layout-grid")
-                    .onClick(() => {
-                        void plugin.openStoryBoard(view.leaf, view.file!);
-                    });
-            });
-
-            menu.addItem((item) => {
-                item.setTitle("AI Script Doctor")
-                    .setIcon("brain-circuit")
-                    .onClick(() => aiScriptDoctor(plugin, editor));
-            });
-
-            menu.addItem((item) => {
-                item.setTitle("AI Rewrite Scene")
-                    .setIcon("sparkles")
-                    .onClick(() => aiSummaryAndRewrite(plugin, editor));
-            });
-
-            menu.addSeparator();
-
             menu.addItem((item: MenuItem) => {
                 item.setTitle("Script Editor").setIcon("film");
                 const subMenu = (item as ExtendedMenuItem).setSubmenu();
@@ -149,6 +125,26 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
                 });
 
                 subMenu.addSeparator();
+
+                subMenu.addItem((item) => {
+                    item.setTitle("Open Story Board")
+                        .setIcon("layout-grid")
+                        .onClick(() => {
+                            void plugin.openStoryBoard(view.leaf, view.file!);
+                        });
+                });
+
+                subMenu.addItem((item) => {
+                    item.setTitle("AI Script Doctor")
+                        .setIcon("brain-circuit")
+                        .onClick(() => aiScriptDoctor(plugin, editor));
+                });
+
+                subMenu.addItem((item) => {
+                    item.setTitle("AI Rewrite Scene")
+                        .setIcon("sparkles")
+                        .onClick(() => aiSummaryAndRewrite(plugin, editor));
+                });
 
                 subMenu.addItem((subItem: MenuItem) => {
                     subItem.setTitle("Renumber scenes").setIcon("list-ordered")
