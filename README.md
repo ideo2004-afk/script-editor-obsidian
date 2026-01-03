@@ -1,4 +1,4 @@
-# Script Editor v1.8.0
+# Script Editor v1.9.0
 
 Script Editor is an AI Powered Fountain-compatible screenplay editor with CJK support (Chinese, Japanese, Korean), intelligent formatting detection, integrated Story Board/Outline tools, AI aid summary, and DOCX export.
 
