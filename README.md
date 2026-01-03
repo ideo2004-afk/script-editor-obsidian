@@ -62,6 +62,8 @@ A visual grid view of your screenplay's scenes with full drag-and-drop support.
 - **Bulk AI Processing**: One-click to analyze and summarize your entire screenplay.
 - **AI Rewrite Scene**: Right-click anywhere in the editor to rewrite your rough notes into a professional screenplay scene based on surrounding context.
 
+![Right-Click](./image/README/right-click-functions.png)
+
 ### Scene Mode View (Outline)
 
 A dedicated structural view for your script.
