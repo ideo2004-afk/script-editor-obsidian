@@ -1,4 +1,4 @@
-# Script Editor v1.8.0
+# Script Editor v1.9.0
 
 Script Editor 是提供 AI 輔助的標準美式劇本寫作工具，支援 Fountain-compatible 語法，並相容於繁體中文（或日、韓語系），撰寫時會自動檢測劇本語法，並內建提供 Story Board 卡片整理模式，可拖拉管理所有場次，加上 AI 自動整理各場次摘要等功能。
 
@@ -99,6 +99,8 @@ Script Editor 是提供 AI 輔助的標準美式劇本寫作工具，支援 Foun
 ### 右鍵功能 (Right-click Function)
 
 - 編輯模式中，滑鼠右鍵選單提供常用 Syntax 語法（角色、對話、轉場等）與其他功能。
+
+![Right-Click](./image/README/right-click-functions2.png)
 
 ### 原生 Markdown 相容 (Markdown-Native)
 
