@@ -19324,14 +19324,6 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     }
     const headerEl = container.createDiv({ cls: "storyboard-header" });
     headerEl.createEl("h2", { text: displayTitle });
-    const bulkBtn = headerEl.createEl("button", {
-      cls: "storyboard-bulk-ai-btn mod-cta"
-    });
-    (0, import_obsidian2.setTooltip)(bulkBtn, "Analyze script and generate summaries for all scenes missing them.");
-    const bulkBtnText = bulkBtn.createSpan({ text: "AI Beat Summary " });
-    const bulkBtnIcon = bulkBtn.createSpan({ cls: "storyboard-bulk-ai-icon" });
-    (0, import_obsidian2.setIcon)(bulkBtnIcon, "sparkles");
-    bulkBtn.onclick = () => this.runBulkAIBeat(blocks);
     const summaryLength = 50;
     const blocks = [];
     let currentBlock = {
@@ -19507,7 +19499,10 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           e.stopPropagation();
           const menu = new import_obsidian2.Menu();
           menu.addItem((item) => {
-            item.setTitle("AI Beat").setIcon("sparkles").onClick(() => this.runAIBeat(blocks, blockIdx));
+            item.setTitle("Summary This Scene").setIcon("sparkle").onClick(() => this.runAIBeat(blocks, blockIdx));
+          });
+          menu.addItem((item) => {
+            item.setTitle("Summary All Scenes").setIcon("sparkles").onClick(() => this.runBulkAIBeat(blocks));
           });
           menu.addItem((item) => {
             item.setTitle("Edit Scene").setIcon("pencil").onClick(() => this.openEditModal(blocks, blockIdx));
@@ -20005,7 +20000,7 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     const featuresDiv = containerEl.createDiv();
     featuresDiv.createEl("li", { text: "New Script Button: Click the scroll icon in the left ribbon to create a new screenplay." });
     featuresDiv.createEl("li", { text: "Story Board Mode: Activate the grid icon in the right sidebar for a holistic view of script structure." });
-    featuresDiv.createEl("li", { text: "AI Beat Summary: Instantly generate scene summaries using Gemini AI." });
+    featuresDiv.createEl("li", { text: "AI Beat Summary: Right-click any scene card in Story Board to generate summaries." });
     featuresDiv.createEl("li", { text: "Character Quick Menu: Type @ to access frequently used character names." });
     featuresDiv.createEl("li", { text: "Renumber Scenes: Right-click in the editor to re-order your scene numbers automatically." });
     new import_obsidian4.Setting(containerEl).setName("Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
@@ -20206,29 +20201,58 @@ function registerMenus(plugin) {
       });
     })
   );
-  plugin.registerEvent(
-    app.workspace.on("file-open", (file) => {
-      const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
-      if (view) {
-        const headerActions = view.containerEl.querySelector(".view-actions");
-        const existingBtn = headerActions == null ? void 0 : headerActions.querySelector(".script-editor-storyboard-action");
-        if (plugin.isScript(file)) {
-          if (!existingBtn && headerActions) {
-            const actionBtn = view.addAction("layout-grid", "Open Story Board", () => {
-              void plugin.openStoryBoard(view.leaf, file);
-            });
-            actionBtn.addClass("script-editor-storyboard-action");
-          } else if (existingBtn) {
-            existingBtn.style.display = "";
-          }
-        } else {
-          if (existingBtn) {
-            existingBtn.style.display = "none";
-          }
-        }
+  const updateHeaderButtons = () => {
+    const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
+    if (!view)
+      return;
+    const file = view.file;
+    const headerActions = view.containerEl.querySelector(".view-actions");
+    if (!headerActions)
+      return;
+    const existingCardBtn = headerActions.querySelector(".script-editor-storyboard-action");
+    const existingToggleBtn = headerActions.querySelector(".script-editor-mode-toggle-action");
+    if (plugin.isScript(file)) {
+      if (!existingCardBtn) {
+        const btn = view.addAction("layout-grid", "Open Story Board", () => {
+          void plugin.openStoryBoard(view.leaf, file);
+        });
+        btn.addClass("script-editor-storyboard-action");
+      } else {
+        existingCardBtn.style.display = "";
       }
-    })
-  );
+      const state2 = view.leaf.getViewState().state;
+      const isSource = state2.mode === "source" && state2.source === true;
+      const icon = isSource ? "pencil" : "code";
+      const label = isSource ? "\u7DE8\u8F2F\u6A21\u5F0F" : "\u539F\u59CB\u78BC\u6A21\u5F0F";
+      if (!existingToggleBtn) {
+        const btn = view.addAction(icon, label, async () => {
+          const currentState = view.leaf.getViewState();
+          const nextSource = !(currentState.state.mode === "source" && currentState.state.source === true);
+          await view.leaf.setViewState({
+            ...currentState,
+            state: {
+              ...currentState.state,
+              mode: "source",
+              source: nextSource
+            }
+          });
+          updateHeaderButtons();
+        });
+        btn.addClass("script-editor-mode-toggle-action");
+      } else {
+        existingToggleBtn.style.display = "";
+        existingToggleBtn.setAttribute("aria-label", label);
+        (0, import_obsidian5.setIcon)(existingToggleBtn, icon);
+      }
+    } else {
+      if (existingCardBtn)
+        existingCardBtn.style.display = "none";
+      if (existingToggleBtn)
+        existingToggleBtn.style.display = "none";
+    }
+  };
+  plugin.registerEvent(app.workspace.on("file-open", () => updateHeaderButtons()));
+  plugin.registerEvent(app.workspace.on("layout-change", () => updateHeaderButtons()));
 }
 function addMenuItem(menu, title, icon, editor, marker, plugin) {
   if (menu instanceof import_obsidian5.Menu) {

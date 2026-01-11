@@ -1,4 +1,4 @@
-import { Menu, MenuItem, Editor, MarkdownView, TFile, TFolder, WorkspaceLeaf, Notice } from 'obsidian';
+import { Menu, MenuItem, Editor, MarkdownView, TFile, TFolder, WorkspaceLeaf, Notice, setIcon } from 'obsidian';
 import ScriptEditorPlugin, { SCRIPT_MARKERS, SCENE_REGEX, SUMMARY_REGEX, COLOR_TAG_REGEX } from './main';
 import { DocxExporter } from './docxExporter';
 import { GeminiService } from './ai';
@@ -228,30 +228,63 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
     );
 
     // Dynamic header button management
-    plugin.registerEvent(
-        app.workspace.on('file-open', (file) => {
-            const view = app.workspace.getActiveViewOfType(MarkdownView);
-            if (view) {
-                const headerActions = view.containerEl.querySelector('.view-actions');
-                const existingBtn = headerActions?.querySelector('.script-editor-storyboard-action');
+    const updateHeaderButtons = () => {
+        const view = app.workspace.getActiveViewOfType(MarkdownView);
+        if (!view) return;
 
-                if (plugin.isScript(file)) {
-                    if (!existingBtn && headerActions) {
-                        const actionBtn = view.addAction("layout-grid", "Open Story Board", () => {
-                            void plugin.openStoryBoard(view.leaf, file!);
-                        });
-                        actionBtn.addClass('script-editor-storyboard-action');
-                    } else if (existingBtn) {
-                        (existingBtn as HTMLElement).style.display = '';
-                    }
-                } else {
-                    if (existingBtn) {
-                        (existingBtn as HTMLElement).style.display = 'none';
-                    }
-                }
+        const file = view.file;
+        const headerActions = view.containerEl.querySelector('.view-actions');
+        if (!headerActions) return;
+
+        const existingCardBtn = headerActions.querySelector('.script-editor-storyboard-action') as HTMLElement;
+        const existingToggleBtn = headerActions.querySelector('.script-editor-mode-toggle-action') as HTMLElement;
+
+        if (plugin.isScript(file)) {
+            // Card Button
+            if (!existingCardBtn) {
+                const btn = view.addAction("layout-grid", "Open Story Board", () => {
+                    void plugin.openStoryBoard(view.leaf, file!);
+                });
+                btn.addClass('script-editor-storyboard-action');
+            } else {
+                existingCardBtn.style.display = '';
             }
-        })
-    );
+
+            // Mode Toggle Button (Reflect current state)
+            const state = view.leaf.getViewState().state;
+            const isSource = state.mode === 'source' && state.source === true;
+
+            const icon = isSource ? "pencil" : "code";
+            const label = isSource ? "編輯模式" : "原始碼模式";
+
+            if (!existingToggleBtn) {
+                const btn = view.addAction(icon, label, async () => {
+                    const currentState = view.leaf.getViewState();
+                    const nextSource = !(currentState.state.mode === 'source' && currentState.state.source === true);
+                    await view.leaf.setViewState({
+                        ...currentState,
+                        state: {
+                            ...currentState.state,
+                            mode: "source",
+                            source: nextSource
+                        }
+                    });
+                    updateHeaderButtons();
+                });
+                btn.addClass('script-editor-mode-toggle-action');
+            } else {
+                existingToggleBtn.style.display = '';
+                existingToggleBtn.setAttribute('aria-label', label);
+                setIcon(existingToggleBtn, icon);
+            }
+        } else {
+            if (existingCardBtn) existingCardBtn.style.display = 'none';
+            if (existingToggleBtn) existingToggleBtn.style.display = 'none';
+        }
+    };
+
+    plugin.registerEvent(app.workspace.on('file-open', () => updateHeaderButtons()));
+    plugin.registerEvent(app.workspace.on('layout-change', () => updateHeaderButtons()));
 }
 
 function addMenuItem(menu: Menu | MenuItem, title: string, icon: string, editor: Editor, marker: string, plugin: ScriptEditorPlugin) {

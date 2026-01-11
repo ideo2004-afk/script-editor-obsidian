@@ -50,7 +50,7 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
         const featuresDiv = containerEl.createDiv();
         featuresDiv.createEl('li', { text: 'New Script Button: Click the scroll icon in the left ribbon to create a new screenplay.' });
         featuresDiv.createEl('li', { text: 'Story Board Mode: Activate the grid icon in the right sidebar for a holistic view of script structure.' });
-        featuresDiv.createEl('li', { text: 'AI Beat Summary: Instantly generate scene summaries using Gemini AI.' });
+        featuresDiv.createEl('li', { text: 'AI Beat Summary: Right-click any scene card in Story Board to generate summaries.' });
         featuresDiv.createEl('li', { text: 'Character Quick Menu: Type @ to access frequently used character names.' });
         featuresDiv.createEl('li', { text: 'Renumber Scenes: Right-click in the editor to re-order your scene numbers automatically.' });
 

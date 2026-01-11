@@ -82,15 +82,7 @@ export class StoryBoardView extends ItemView {
         const headerEl = container.createDiv({ cls: 'storyboard-header' });
         headerEl.createEl('h2', { text: displayTitle });
 
-        const bulkBtn = headerEl.createEl('button', {
-            cls: 'storyboard-bulk-ai-btn mod-cta',
-        });
-        setTooltip(bulkBtn, "Analyze script and generate summaries for all scenes missing them.");
-        const bulkBtnText = bulkBtn.createSpan({ text: 'AI Beat Summary ' });
-        const bulkBtnIcon = bulkBtn.createSpan({ cls: 'storyboard-bulk-ai-icon' });
-        setIcon(bulkBtnIcon, 'sparkles');
-
-        bulkBtn.onclick = () => this.runBulkAIBeat(blocks);
+        // bulkBtn removed and moved to context menu for cleaner header
 
         const summaryLength = 50;
 
@@ -324,9 +316,15 @@ export class StoryBoardView extends ItemView {
                     const menu = new Menu();
 
                     menu.addItem((item) => {
-                        item.setTitle("AI Beat")
-                            .setIcon("sparkles")
+                        item.setTitle("Summary This Scene")
+                            .setIcon("sparkle")
                             .onClick(() => this.runAIBeat(blocks, blockIdx));
+                    });
+
+                    menu.addItem((item) => {
+                        item.setTitle("Summary All Scenes")
+                            .setIcon("sparkles")
+                            .onClick(() => this.runBulkAIBeat(blocks));
                     });
 
                     menu.addItem((item) => {

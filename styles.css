@@ -6,7 +6,7 @@
 .fountain,
 .script {
     --script-dialogue-margin: 8em;
-    --script-font-size: 1em;
+    --script-font-size: var(--font-text-size, 1em);
     --script-line-height: 1.5;
     --script-note-width: 280px;
 }
@@ -196,25 +196,7 @@
     margin: 0;
 }
 
-.storyboard-bulk-ai-btn {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 14px;
-    font-size: var(--font-ui-small);
-    font-weight: 500;
-}
 
-.storyboard-bulk-ai-icon svg {
-    width: 14px;
-    height: 14px;
-    color: inherit;
-    display: block;
-}
 
 .storyboard-grid {
     display: grid;
