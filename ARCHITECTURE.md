@@ -6,18 +6,20 @@ This document outlines the modular structure of the Script Editor Obsidian plugi
 
 ### [main.ts](main.ts)
 
-**The Central Orchestrator & Rulebook.**
+**The Registry & Utility Root.**
 
 - **Plugin Lifecycle**: Handles `onload` and `onunload`.
-- **Core Parsing**: Contains shared Regex definitions and the `detectExplicitFormat` utility used by all modules.
+- **Core Parsing**: Contains shared Regex definitions and the `detectExplicitFormat` utility.
+- **Type Safety**: Provides the `isScript` type guard for reliable file identification.
 - **State Management**: Manages settings and cross-view synchronization.
 
 ### [menus.ts](menus.ts)
 
 **The UI Entrance & Action Implementation.**
 
-- **Commands & Menus**: Registers and implements all plugin commands, context menus, ribbon icons, and header buttons.
-- **Action Logic**: Houses the algorithms for major actions like scene renumbering, Word export, and new script creation (moved from `main.ts`).
+- **Commands & Menus**: Registers all ribbon icons, commands, and context menus.
+- **Core Actions**: Houses the implementation for scene renumbering, Word export (via `DocxExporter`), and script management logic.
+- **View Headers**: Dynamically manages custom buttons (Storyboard, Mode Toggle) in the Obsidian editor header.
 
 ### [suggest.ts](suggest.ts)
 
