@@ -55,7 +55,7 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
       text: "Story board mode: Activate the grid icon in the right sidebar for a holistic view of script structure.",
     });
     featuresDiv.createEl("li", {
-      text: "AI beat summary: Right-click any scene card in Story Board to generate summaries.",
+      text: "AI beat summary: Right-click any scene card in story board to generate summaries.",
     });
     featuresDiv.createEl("li", {
       text: "Character quick menu: Type @ to access frequently used character names.",
@@ -72,13 +72,13 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
 
     const syntaxDiv = containerEl.createDiv();
     syntaxDiv.createEl("li", {
-      text: "Scene heading: INT. / EXT. — Automatic bold & uppercase.",
+      text: "Scene heading: Int. / Ext. — automatic bold and uppercase.",
     });
     syntaxDiv.createEl("li", {
       text: 'Character: @NAME — Centered. "@" is hidden in preview.',
     });
     syntaxDiv.createEl("li", {
-      text: "Dialogue: Text below Character — Automatically indented.",
+      text: "Dialogue: Text below character — automatically indented.",
     });
     syntaxDiv.createEl("li", {
       text: "Parenthetical: (emotion) / OS: / VO: — Centered & italic.",

@@ -19271,7 +19271,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     return STORYBOARD_VIEW_TYPE;
   }
   getDisplayText() {
-    return this.file ? `Story Board: ${this.file.basename}` : "Story Board";
+    return this.file ? `Story board: ${this.file.basename}` : "Story board";
   }
   getIcon() {
     return "layout-grid";
@@ -19281,7 +19281,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     await this.updateView();
   }
   async onOpen() {
-    this.addAction("pencil", "Live View", async () => {
+    this.addAction("pencil", "Live view", async () => {
       if (this.file) {
         await this.leaf.setViewState({
           type: "markdown",
@@ -19292,7 +19292,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
         });
       }
     });
-    this.addAction("book-open", "Reading Mode", async () => {
+    this.addAction("book-open", "Reading mode", async () => {
       if (this.file) {
         await this.leaf.setViewState({
           type: "markdown",
@@ -19433,7 +19433,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           colors.forEach((c) => {
             const opt = picker.createDiv({
               cls: `color-option color-option-${c} ${cardColor === c ? "is-selected" : ""}`,
-              attr: { title: c === "none" ? "Clear Color" : c.toUpperCase() }
+              attr: { title: c === "none" ? "Clear color" : c.toUpperCase() }
             });
             opt.addEventListener("click", (ev) => {
               ev.stopPropagation();
@@ -19631,20 +19631,20 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     const overlay = container.createDiv({ cls: "storyboard-modal-overlay" });
     const modal = overlay.createDiv({ cls: "storyboard-edit-modal" });
     const header = modal.createDiv({ cls: "storyboard-modal-header" });
-    header.createEl("h3", { text: "Edit Scene" });
+    header.createEl("h3", { text: "Edit scene" });
     const body = modal.createDiv({ cls: "storyboard-modal-body" });
     body.createEl("div", {
-      text: "Scene Heading",
+      text: "Scene heading",
       cls: "storyboard-modal-label"
     });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "e.g. INT. KITCHEN - DAY" }
+      attr: { type: "text", placeholder: "e.g. Int. Kitchen - Day" }
     });
     titleInput.value = title;
     titleInput.focus();
     body.createEl("div", {
-      text: "Summary (shown on Story Board)",
+      text: "Summary (shown on story board)",
       cls: "storyboard-modal-label"
     });
     const summaryInput = body.createEl("textarea", {
@@ -19653,7 +19653,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     });
     summaryInput.value = existingSummary;
     body.createEl("div", {
-      text: "Script Content",
+      text: "Script content",
       cls: "storyboard-modal-label"
     });
     const textarea = body.createEl("textarea", {
@@ -19762,7 +19762,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     )) == null ? void 0 : _a.settings;
     const apiKey = settings == null ? void 0 : settings.geminiApiKey;
     if (!apiKey) {
-      new import_obsidian2.Notice("Please set your Gemini API Key in settings first.");
+      new import_obsidian2.Notice("Please set your Gemini API key in settings first.");
       return;
     }
     const gemini = new GeminiService(apiKey);
@@ -19771,7 +19771,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     const hasContent = content.length > 20;
     if (!hasContent) {
       new import_obsidian2.Notice(
-        "Cannot generate AI Beat: Scene has no content. Please write something first."
+        "Cannot generate AI beat: scene has no content. Please write something first."
       );
       return;
     }
@@ -19791,7 +19791,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     if (this.file) {
       await this.app.vault.modify(this.file, fullContent);
       await this.updateView();
-      new import_obsidian2.Notice("AI Beat Generated!");
+      new import_obsidian2.Notice("AI beat generated!");
     }
   }
   async runBulkAIBeat(blocks) {
@@ -19801,7 +19801,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     )) == null ? void 0 : _a.settings;
     const apiKey = settings == null ? void 0 : settings.geminiApiKey;
     if (!apiKey) {
-      new import_obsidian2.Notice("Please set your Gemini API Key in settings first.");
+      new import_obsidian2.Notice("Please set your Gemini API key in settings first.");
       return;
     }
     const scenesToProcess = blocks.slice(1).filter((b) => b.type === "scene" && !b.summary);
@@ -20068,7 +20068,7 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
       text: "Story board mode: Activate the grid icon in the right sidebar for a holistic view of script structure."
     });
     featuresDiv.createEl("li", {
-      text: "AI beat summary: Right-click any scene card in Story Board to generate summaries."
+      text: "AI beat summary: Right-click any scene card in story board to generate summaries."
     });
     featuresDiv.createEl("li", {
       text: "Character quick menu: Type @ to access frequently used character names."
@@ -20079,13 +20079,13 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     new import_obsidian4.Setting(containerEl).setName("Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
     const syntaxDiv = containerEl.createDiv();
     syntaxDiv.createEl("li", {
-      text: "Scene heading: INT. / EXT. \u2014 Automatic bold & uppercase."
+      text: "Scene heading: Int. / Ext. \u2014 automatic bold and uppercase."
     });
     syntaxDiv.createEl("li", {
       text: 'Character: @NAME \u2014 Centered. "@" is hidden in preview.'
     });
     syntaxDiv.createEl("li", {
-      text: "Dialogue: Text below Character \u2014 Automatically indented."
+      text: "Dialogue: Text below character \u2014 automatically indented."
     });
     syntaxDiv.createEl("li", {
       text: "Parenthetical: (emotion) / OS: / VO: \u2014 Centered & italic."
@@ -20206,13 +20206,13 @@ function registerMenus(plugin) {
             startItem.setTitle("Scene heading").setIcon("clapperboard");
             const sceneMenu = startItem.setSubmenu();
             sceneMenu.addItem(
-              (i) => i.setTitle("EXT.").onClick(() => insertText(editor, "EXT. ", false))
+              (i) => i.setTitle("Ext.").onClick(() => insertText(editor, "EXT. ", false))
             );
             sceneMenu.addItem(
-              (i) => i.setTitle("INT.").onClick(() => insertText(editor, "INT. ", false))
+              (i) => i.setTitle("Int.").onClick(() => insertText(editor, "INT. ", false))
             );
             sceneMenu.addItem(
-              (i) => i.setTitle("I/E.").onClick(() => insertText(editor, "INT./EXT. ", false))
+              (i) => i.setTitle("I/e.").onClick(() => insertText(editor, "INT./EXT. ", false))
             );
           });
           addMenuItem(
@@ -20235,16 +20235,16 @@ function registerMenus(plugin) {
             item2.setTitle("Transition").setIcon("arrow-right");
             const m = item2.setSubmenu();
             m.addItem(
-              (i) => i.setTitle("CUT TO:").onClick(() => insertText(editor, "CUT TO:", true))
+              (i) => i.setTitle("Cut to:").onClick(() => insertText(editor, "CUT TO:", true))
             );
             m.addItem(
-              (i) => i.setTitle("FADE OUT.").onClick(() => insertText(editor, "FADE OUT.", true))
+              (i) => i.setTitle("Fade out.").onClick(() => insertText(editor, "FADE OUT.", true))
             );
             m.addItem(
-              (i) => i.setTitle("FADE IN:").onClick(() => insertText(editor, "FADE IN:", true))
+              (i) => i.setTitle("Fade in:").onClick(() => insertText(editor, "FADE IN:", true))
             );
             m.addItem(
-              (i) => i.setTitle("DISSOLVE TO:").onClick(() => insertText(editor, "DISSOLVE TO:", true))
+              (i) => i.setTitle("Dissolve to:").onClick(() => insertText(editor, "DISSOLVE TO:", true))
             );
           });
           subMenu.addItem((item2) => {
@@ -20599,7 +20599,7 @@ Somerset still seems distant.
 async function aiScriptDoctor(plugin, editor) {
   const apiKey = plugin.settings.geminiApiKey;
   if (!apiKey) {
-    new import_obsidian5.Notice("Please set your Gemini API Key in settings first.");
+    new import_obsidian5.Notice("Please set your Gemini API key in settings first.");
     return;
   }
   const content = editor.getValue();
@@ -20646,13 +20646,13 @@ async function aiScriptDoctor(plugin, editor) {
     }
   }
   if (targetBlockIdx === -1 || blocks[targetBlockIdx].type !== "scene") {
-    new import_obsidian5.Notice("Please place cursor inside a scene to use Script Doctor.");
+    new import_obsidian5.Notice("Please place cursor inside a scene to use script doctor.");
     return;
   }
   const targetBlock = blocks[targetBlockIdx];
   const before = blocks.slice(Math.max(0, targetBlockIdx - 5), targetBlockIdx).map((b) => b.contentLines.join("\n")).join("\n---\n");
   const after = blocks.slice(targetBlockIdx + 1, Math.min(blocks.length, targetBlockIdx + 6)).map((b) => b.contentLines.join("\n")).join("\n---\n");
-  new import_obsidian5.Notice("\u{1F916} Consulting Script Doctor...");
+  new import_obsidian5.Notice("\u{1F916} Consulting script doctor...");
   const gemini = new GeminiService(apiKey);
   const sceneBody = targetBlock.contentLines.join("\n").trim();
   const response = await gemini.generateBrainstormQuestions(
@@ -20682,12 +20682,12 @@ async function aiScriptDoctor(plugin, editor) {
     { line: startLine, ch: 0 },
     { line: endLine, ch: lines[endLine].length }
   );
-  new import_obsidian5.Notice("\u{1F9E0} Script Doctor questions added!");
+  new import_obsidian5.Notice("\u{1F9E0} Script doctor questions added!");
 }
 async function aiSummaryAndRewrite(plugin, editor) {
   const apiKey = plugin.settings.geminiApiKey;
   if (!apiKey) {
-    new import_obsidian5.Notice("Please set your Gemini API Key in settings first.");
+    new import_obsidian5.Notice("Please set your Gemini API key in settings first.");
     return;
   }
   const content = editor.getValue();
@@ -20747,7 +20747,7 @@ async function aiSummaryAndRewrite(plugin, editor) {
   const gemini = new GeminiService(apiKey);
   let response;
   if (isSceneEmpty) {
-    new import_obsidian5.Notice("\u{1F916} Scene is empty. Consulting Script Doctor...");
+    new import_obsidian5.Notice("Wait, scene is empty. Consulting script doctor...");
     response = await gemini.generateBrainstormQuestions(
       targetBlock.contentLines[0],
       before,
@@ -20780,7 +20780,7 @@ async function aiSummaryAndRewrite(plugin, editor) {
       { line: startLine, ch: 0 },
       { line: endLine, ch: lines[endLine].length }
     );
-    new import_obsidian5.Notice("\u{1F9E0} Scene was empty. Script Doctor's questions added.");
+    new import_obsidian5.Notice("\u{1F9E0} Scene was empty. Script doctor's questions added.");
   } else {
     const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
     const contentParts = aiText.split(/CONTENT:\s*/i);

@@ -119,17 +119,17 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
             const sceneMenu = (startItem as ExtendedMenuItem).setSubmenu();
             sceneMenu.addItem((i: MenuItem) =>
               i
-                .setTitle("EXT.")
+                .setTitle("Ext.")
                 .onClick(() => insertText(editor, "EXT. ", false))
             );
             sceneMenu.addItem((i: MenuItem) =>
               i
-                .setTitle("INT.")
+                .setTitle("Int.")
                 .onClick(() => insertText(editor, "INT. ", false))
             );
             sceneMenu.addItem((i: MenuItem) =>
               i
-                .setTitle("I/E.")
+                .setTitle("I/e.")
                 .onClick(() => insertText(editor, "INT./EXT. ", false))
             );
           });
@@ -157,22 +157,22 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
             const m = (item as ExtendedMenuItem).setSubmenu();
             m.addItem((i: MenuItem) =>
               i
-                .setTitle("CUT TO:")
+                .setTitle("Cut to:")
                 .onClick(() => insertText(editor, "CUT TO:", true))
             );
             m.addItem((i: MenuItem) =>
               i
-                .setTitle("FADE OUT.")
+                .setTitle("Fade out.")
                 .onClick(() => insertText(editor, "FADE OUT.", true))
             );
             m.addItem((i: MenuItem) =>
               i
-                .setTitle("FADE IN:")
+                .setTitle("Fade in:")
                 .onClick(() => insertText(editor, "FADE IN:", true))
             );
             m.addItem((i: MenuItem) =>
               i
-                .setTitle("DISSOLVE TO:")
+                .setTitle("Dissolve to:")
                 .onClick(() => insertText(editor, "DISSOLVE TO:", true))
             );
           });
@@ -663,7 +663,7 @@ export async function aiScriptDoctor(
 ) {
   const apiKey = plugin.settings.geminiApiKey;
   if (!apiKey) {
-    new Notice("Please set your Gemini API Key in settings first.");
+    new Notice("Please set your Gemini API key in settings first.");
     return;
   }
 
@@ -727,7 +727,7 @@ export async function aiScriptDoctor(
   }
 
   if (targetBlockIdx === -1 || blocks[targetBlockIdx].type !== "scene") {
-    new Notice("Please place cursor inside a scene to use Script Doctor.");
+    new Notice("Please place cursor inside a scene to use script doctor.");
     return;
   }
 
@@ -743,7 +743,7 @@ export async function aiScriptDoctor(
     .map((b) => b.contentLines.join("\n"))
     .join("\n---\n");
 
-  new Notice("🤖 Consulting Script Doctor...");
+  new Notice("🤖 Consulting script doctor...");
   const gemini = new GeminiService(apiKey);
 
   const sceneBody = targetBlock.contentLines.join("\n").trim();
@@ -798,7 +798,7 @@ export async function aiScriptDoctor(
     { line: endLine, ch: lines[endLine].length }
   );
 
-  new Notice("🧠 Script Doctor questions added!");
+  new Notice("🧠 Script doctor questions added!");
 }
 
 export async function aiSummaryAndRewrite(
@@ -807,7 +807,7 @@ export async function aiSummaryAndRewrite(
 ) {
   const apiKey = plugin.settings.geminiApiKey;
   if (!apiKey) {
-    new Notice("Please set your Gemini API Key in settings first.");
+    new Notice("Please set your Gemini API key in settings first.");
     return;
   }
 
@@ -902,7 +902,7 @@ export async function aiSummaryAndRewrite(
   const gemini = new GeminiService(apiKey);
   let response;
   if (isSceneEmpty) {
-    new Notice("🤖 Scene is empty. Consulting Script Doctor...");
+    new Notice("Wait, scene is empty. Consulting script doctor...");
     response = await gemini.generateBrainstormQuestions(
       targetBlock.contentLines[0],
       before,
@@ -951,7 +951,7 @@ export async function aiSummaryAndRewrite(
       { line: startLine, ch: 0 },
       { line: endLine, ch: lines[endLine].length }
     );
-    new Notice("🧠 Scene was empty. Script Doctor's questions added.");
+    new Notice("🧠 Scene was empty. Script doctor's questions added.");
   } else {
     // Handle Rewrite response (standard replacement)
     const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);

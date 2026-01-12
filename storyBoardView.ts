@@ -32,7 +32,7 @@ export class StoryBoardView extends ItemView {
   }
 
   getDisplayText() {
-    return this.file ? `Story Board: ${this.file.basename}` : "Story Board";
+    return this.file ? `Story board: ${this.file.basename}` : "Story board";
   }
 
   getIcon() {
@@ -45,7 +45,7 @@ export class StoryBoardView extends ItemView {
   }
 
   async onOpen() {
-    this.addAction("pencil", "Live View", async () => {
+    this.addAction("pencil", "Live view", async () => {
       if (this.file) {
         await this.leaf.setViewState({
           type: "markdown",
@@ -57,7 +57,7 @@ export class StoryBoardView extends ItemView {
       }
     });
 
-    this.addAction("book-open", "Reading Mode", async () => {
+    this.addAction("book-open", "Reading mode", async () => {
       if (this.file) {
         await this.leaf.setViewState({
           type: "markdown",
@@ -251,7 +251,7 @@ export class StoryBoardView extends ItemView {
               cls: `color-option color-option-${c} ${
                 cardColor === c ? "is-selected" : ""
               }`,
-              attr: { title: c === "none" ? "Clear Color" : c.toUpperCase() },
+              attr: { title: c === "none" ? "Clear color" : c.toUpperCase() },
             });
 
             opt.addEventListener("click", (ev) => {
@@ -533,26 +533,26 @@ export class StoryBoardView extends ItemView {
 
     // Modal Header
     const header = modal.createDiv({ cls: "storyboard-modal-header" });
-    header.createEl("h3", { text: "Edit Scene" });
+    header.createEl("h3", { text: "Edit scene" });
 
     // Body
     const body = modal.createDiv({ cls: "storyboard-modal-body" });
 
     // Title
     body.createEl("div", {
-      text: "Scene Heading",
+      text: "Scene heading",
       cls: "storyboard-modal-label",
     });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "e.g. INT. KITCHEN - DAY" },
+      attr: { type: "text", placeholder: "e.g. Int. Kitchen - Day" },
     });
     titleInput.value = title;
     titleInput.focus();
 
     // Summary
     body.createEl("div", {
-      text: "Summary (shown on Story Board)",
+      text: "Summary (shown on story board)",
       cls: "storyboard-modal-label",
     });
     const summaryInput = body.createEl("textarea", {
@@ -563,7 +563,7 @@ export class StoryBoardView extends ItemView {
 
     // Content
     body.createEl("div", {
-      text: "Script Content",
+      text: "Script content",
       cls: "storyboard-modal-label",
     });
     const textarea = body.createEl("textarea", {
@@ -697,7 +697,7 @@ export class StoryBoardView extends ItemView {
     const apiKey = settings?.geminiApiKey;
 
     if (!apiKey) {
-      new Notice("Please set your Gemini API Key in settings first.");
+      new Notice("Please set your Gemini API key in settings first.");
       return;
     }
 
@@ -708,7 +708,7 @@ export class StoryBoardView extends ItemView {
 
     if (!hasContent) {
       new Notice(
-        "Cannot generate AI Beat: Scene has no content. Please write something first."
+        "Cannot generate AI beat: scene has no content. Please write something first."
       );
       return;
     }
@@ -738,7 +738,7 @@ export class StoryBoardView extends ItemView {
     if (this.file) {
       await this.app.vault.modify(this.file, fullContent);
       await this.updateView();
-      new Notice("AI Beat Generated!");
+      new Notice("AI beat generated!");
     }
   }
 
@@ -749,7 +749,7 @@ export class StoryBoardView extends ItemView {
     const apiKey = settings?.geminiApiKey;
 
     if (!apiKey) {
-      new Notice("Please set your Gemini API Key in settings first.");
+      new Notice("Please set your Gemini API key in settings first.");
       return;
     }
 
