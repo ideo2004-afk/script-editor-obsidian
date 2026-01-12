@@ -92,13 +92,13 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
 
   plugin.addCommand({
     id: "ai-script-doctor",
-    name: "AI Script Doctor",
+    name: "AI script doctor",
     editorCallback: (editor: Editor) => aiScriptDoctor(plugin, editor),
   });
 
   plugin.addCommand({
     id: "ai-rewrite-scene",
-    name: "AI Rewrite Scene",
+    name: "AI rewrite scene",
     editorCallback: (editor: Editor) => aiSummaryAndRewrite(plugin, editor),
   });
 
@@ -110,7 +110,7 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
         if (!plugin.isScript(view.file)) return;
 
         menu.addItem((item: MenuItem) => {
-          item.setTitle("Script Editor").setIcon("film");
+          item.setTitle("Script editor").setIcon("film");
           const subMenu = (item as ExtendedMenuItem).setSubmenu();
 
           // Scene Heading Submenu
@@ -179,7 +179,7 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
 
           subMenu.addItem((item: MenuItem) => {
             item
-              .setTitle("Insert Note")
+              .setTitle("Insert note")
               .setIcon("sticky-note")
               .onClick(() =>
                 insertText(editor, "%%note: Note text here%%", true)
@@ -190,7 +190,7 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
 
           subMenu.addItem((item) => {
             item
-              .setTitle("Open Story Board")
+              .setTitle("Open story board")
               .setIcon("layout-grid")
               .onClick(() => {
                 void plugin.openStoryBoard(view.leaf, view.file);
@@ -199,14 +199,14 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
 
           subMenu.addItem((item) => {
             item
-              .setTitle("AI Script Doctor")
+              .setTitle("AI script doctor")
               .setIcon("brain-circuit")
               .onClick(() => aiScriptDoctor(plugin, editor));
           });
 
           subMenu.addItem((item) => {
             item
-              .setTitle("AI Rewrite Scene")
+              .setTitle("AI rewrite scene")
               .setIcon("sparkles")
               .onClick(() => aiSummaryAndRewrite(plugin, editor));
           });
@@ -248,7 +248,7 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
       if (view instanceof MarkdownView && plugin.isScript(view.file)) {
         menu.addItem((item: MenuItem) => {
           item
-            .setTitle("Open Story Board")
+            .setTitle("Open story board")
             .setIcon("layout-grid")
             .onClick(() => {
               void plugin.openStoryBoard(view.leaf, view.file);
@@ -319,7 +319,7 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
     if (plugin.isScript(file)) {
       // Card Button
       if (!existingCardBtn) {
-        const btn = view.addAction("layout-grid", "Open Story Board", () => {
+        const btn = view.addAction("layout-grid", "Open story board", () => {
           void plugin.openStoryBoard(view.leaf, file);
         });
         btn.addClass("script-editor-storyboard-action");

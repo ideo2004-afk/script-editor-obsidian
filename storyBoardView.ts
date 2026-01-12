@@ -352,7 +352,7 @@ export class StoryBoardView extends ItemView {
 
           menu.addItem((item) => {
             item
-              .setTitle("Summary This Scene")
+              .setTitle("Summary this scene")
               .setIcon("sparkle")
               .onClick(() => {
                 void this.runAIBeat(blocks, blockIdx);
@@ -361,7 +361,7 @@ export class StoryBoardView extends ItemView {
 
           menu.addItem((item) => {
             item
-              .setTitle("Summary All Scenes")
+              .setTitle("Summary all scenes")
               .setIcon("sparkles")
               .onClick(() => {
                 void this.runBulkAIBeat(blocks);
@@ -370,7 +370,7 @@ export class StoryBoardView extends ItemView {
 
           menu.addItem((item) => {
             item
-              .setTitle("Edit Scene")
+              .setTitle("Edit scene")
               .setIcon("pencil")
               .onClick(() => {
                 this.openEditModal(blocks, blockIdx);
@@ -381,7 +381,7 @@ export class StoryBoardView extends ItemView {
 
           menu.addItem((item) => {
             item
-              .setTitle("New Scene")
+              .setTitle("New scene")
               .setIcon("plus")
               .onClick(() => {
                 void this.insertNewScene(blocks, blockIdx);
@@ -390,7 +390,7 @@ export class StoryBoardView extends ItemView {
 
           menu.addItem((item) => {
             item
-              .setTitle("Duplicate Scene")
+              .setTitle("Duplicate scene")
               .setIcon("copy")
               .onClick(() => {
                 void this.duplicateScene(blocks, blockIdx);
@@ -401,7 +401,7 @@ export class StoryBoardView extends ItemView {
 
           menu.addItem((item) => {
             item
-              .setTitle("Delete Scene")
+              .setTitle("Delete scene")
               .setIcon("trash-2")
               .onClick(() => {
                 this.confirmDeleteScene(blocks, blockIdx);

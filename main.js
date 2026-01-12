@@ -19513,34 +19513,34 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           e.stopPropagation();
           const menu = new import_obsidian2.Menu();
           menu.addItem((item) => {
-            item.setTitle("Summary This Scene").setIcon("sparkle").onClick(() => {
+            item.setTitle("Summary this scene").setIcon("sparkle").onClick(() => {
               void this.runAIBeat(blocks, blockIdx);
             });
           });
           menu.addItem((item) => {
-            item.setTitle("Summary All Scenes").setIcon("sparkles").onClick(() => {
+            item.setTitle("Summary all scenes").setIcon("sparkles").onClick(() => {
               void this.runBulkAIBeat(blocks);
             });
           });
           menu.addItem((item) => {
-            item.setTitle("Edit Scene").setIcon("pencil").onClick(() => {
+            item.setTitle("Edit scene").setIcon("pencil").onClick(() => {
               this.openEditModal(blocks, blockIdx);
             });
           });
           menu.addSeparator();
           menu.addItem((item) => {
-            item.setTitle("New Scene").setIcon("plus").onClick(() => {
+            item.setTitle("New scene").setIcon("plus").onClick(() => {
               void this.insertNewScene(blocks, blockIdx);
             });
           });
           menu.addItem((item) => {
-            item.setTitle("Duplicate Scene").setIcon("copy").onClick(() => {
+            item.setTitle("Duplicate scene").setIcon("copy").onClick(() => {
               void this.duplicateScene(blocks, blockIdx);
             });
           });
           menu.addSeparator();
           menu.addItem((item) => {
-            item.setTitle("Delete Scene").setIcon("trash-2").onClick(() => {
+            item.setTitle("Delete scene").setIcon("trash-2").onClick(() => {
               this.confirmDeleteScene(blocks, blockIdx);
             });
           });
@@ -20053,27 +20053,55 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian4.Setting(containerEl).setName("Usage guide").setHeading();
-    new import_obsidian4.Setting(containerEl).setName("AI Beat summary (Gemini 2.5 Flash)").setDesc("Get your API key from Google AI Studio.").addText((text) => text.setPlaceholder("Enter your Gemini API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
-      this.plugin.settings.geminiApiKey = value.trim();
-      await this.plugin.saveSettings();
-    }).inputEl.style.width = "350px");
+    new import_obsidian4.Setting(containerEl).setName("AI beat summary (Gemini 2.5 Flash)").setDesc("Get your API key from Google AI Studio.").addText(
+      (text) => text.setPlaceholder("Enter your Gemini API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
+        this.plugin.settings.geminiApiKey = value.trim();
+        await this.plugin.saveSettings();
+      }).inputEl.style.width = "350px"
+    );
     new import_obsidian4.Setting(containerEl).setName("Quick features").setDesc("Automation and creation tools.").setHeading();
     const featuresDiv = containerEl.createDiv();
-    featuresDiv.createEl("li", { text: "New Script Button: Click the scroll icon in the left ribbon to create a new screenplay." });
-    featuresDiv.createEl("li", { text: "Story Board Mode: Activate the grid icon in the right sidebar for a holistic view of script structure." });
-    featuresDiv.createEl("li", { text: "AI Beat Summary: Right-click any scene card in Story Board to generate summaries." });
-    featuresDiv.createEl("li", { text: "Character Quick Menu: Type @ to access frequently used character names." });
-    featuresDiv.createEl("li", { text: "Renumber Scenes: Right-click in the editor to re-order your scene numbers automatically." });
+    featuresDiv.createEl("li", {
+      text: "New script button: Click the scroll icon in the left ribbon to create a new screenplay."
+    });
+    featuresDiv.createEl("li", {
+      text: "Story board mode: Activate the grid icon in the right sidebar for a holistic view of script structure."
+    });
+    featuresDiv.createEl("li", {
+      text: "AI beat summary: Right-click any scene card in Story Board to generate summaries."
+    });
+    featuresDiv.createEl("li", {
+      text: "Character quick menu: Type @ to access frequently used character names."
+    });
+    featuresDiv.createEl("li", {
+      text: "Renumber scenes: Right-click in the editor to re-order your scene numbers automatically."
+    });
     new import_obsidian4.Setting(containerEl).setName("Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
     const syntaxDiv = containerEl.createDiv();
-    syntaxDiv.createEl("li", { text: "Scene Heading: INT. / EXT. \u2014 Automatic bold & uppercase." });
-    syntaxDiv.createEl("li", { text: 'Character: @NAME \u2014 Centered. "@" is hidden in preview.' });
-    syntaxDiv.createEl("li", { text: "Dialogue: Text below Character \u2014 Automatically indented." });
-    syntaxDiv.createEl("li", { text: "Parenthetical: (emotion) / OS: / VO: \u2014 Centered & italic." });
-    syntaxDiv.createEl("li", { text: "Transition: CUT TO: / FADE IN \u2014 Right aligned." });
-    const supportDiv = containerEl.createEl("div", { cls: "script-editor-settings-support" });
-    supportDiv.createEl("p", { text: "If you enjoy using Script Editor, consider supporting its development!" });
-    const sponsorActions = supportDiv.createDiv({ cls: "script-editor-sponsor-actions" });
+    syntaxDiv.createEl("li", {
+      text: "Scene heading: INT. / EXT. \u2014 Automatic bold & uppercase."
+    });
+    syntaxDiv.createEl("li", {
+      text: 'Character: @NAME \u2014 Centered. "@" is hidden in preview.'
+    });
+    syntaxDiv.createEl("li", {
+      text: "Dialogue: Text below Character \u2014 Automatically indented."
+    });
+    syntaxDiv.createEl("li", {
+      text: "Parenthetical: (emotion) / OS: / VO: \u2014 Centered & italic."
+    });
+    syntaxDiv.createEl("li", {
+      text: "Transition: CUT TO: / FADE IN \u2014 Right aligned."
+    });
+    const supportDiv = containerEl.createEl("div", {
+      cls: "script-editor-settings-support"
+    });
+    supportDiv.createEl("p", {
+      text: "If you enjoy using Script Editor, consider supporting its development!"
+    });
+    const sponsorActions = supportDiv.createDiv({
+      cls: "script-editor-sponsor-actions"
+    });
     const bmacLink = sponsorActions.createEl("a", {
       href: "https://buymeacoffee.com/ideo2004c",
       cls: "script-editor-sponsor-btn bmac-btn"
@@ -20157,12 +20185,12 @@ function registerMenus(plugin) {
   });
   plugin.addCommand({
     id: "ai-script-doctor",
-    name: "AI Script Doctor",
+    name: "AI script doctor",
     editorCallback: (editor) => aiScriptDoctor(plugin, editor)
   });
   plugin.addCommand({
     id: "ai-rewrite-scene",
-    name: "AI Rewrite Scene",
+    name: "AI rewrite scene",
     editorCallback: (editor) => aiSummaryAndRewrite(plugin, editor)
   });
   plugin.registerEvent(
@@ -20172,7 +20200,7 @@ function registerMenus(plugin) {
         if (!plugin.isScript(view.file))
           return;
         menu.addItem((item) => {
-          item.setTitle("Script Editor").setIcon("film");
+          item.setTitle("Script editor").setIcon("film");
           const subMenu = item.setSubmenu();
           subMenu.addItem((startItem) => {
             startItem.setTitle("Scene heading").setIcon("clapperboard");
@@ -20220,21 +20248,21 @@ function registerMenus(plugin) {
             );
           });
           subMenu.addItem((item2) => {
-            item2.setTitle("Insert Note").setIcon("sticky-note").onClick(
+            item2.setTitle("Insert note").setIcon("sticky-note").onClick(
               () => insertText(editor, "%%note: Note text here%%", true)
             );
           });
           subMenu.addSeparator();
           subMenu.addItem((item2) => {
-            item2.setTitle("Open Story Board").setIcon("layout-grid").onClick(() => {
+            item2.setTitle("Open story board").setIcon("layout-grid").onClick(() => {
               void plugin.openStoryBoard(view.leaf, view.file);
             });
           });
           subMenu.addItem((item2) => {
-            item2.setTitle("AI Script Doctor").setIcon("brain-circuit").onClick(() => aiScriptDoctor(plugin, editor));
+            item2.setTitle("AI script doctor").setIcon("brain-circuit").onClick(() => aiScriptDoctor(plugin, editor));
           });
           subMenu.addItem((item2) => {
-            item2.setTitle("AI Rewrite Scene").setIcon("sparkles").onClick(() => aiSummaryAndRewrite(plugin, editor));
+            item2.setTitle("AI rewrite scene").setIcon("sparkles").onClick(() => aiSummaryAndRewrite(plugin, editor));
           });
           subMenu.addItem((subItem) => {
             subItem.setTitle("Renumber scenes").setIcon("list-ordered").onClick(() => renumberScenes(plugin, editor));
@@ -20258,7 +20286,7 @@ function registerMenus(plugin) {
     app.workspace.on("view-actions-menu", (menu, view) => {
       if (view instanceof import_obsidian5.MarkdownView && plugin.isScript(view.file)) {
         menu.addItem((item) => {
-          item.setTitle("Open Story Board").setIcon("layout-grid").onClick(() => {
+          item.setTitle("Open story board").setIcon("layout-grid").onClick(() => {
             void plugin.openStoryBoard(view.leaf, view.file);
           });
         });
@@ -20311,7 +20339,7 @@ function registerMenus(plugin) {
     );
     if (plugin.isScript(file)) {
       if (!existingCardBtn) {
-        const btn = view.addAction("layout-grid", "Open Story Board", () => {
+        const btn = view.addAction("layout-grid", "Open story board", () => {
           void plugin.openStoryBoard(view.leaf, file);
         });
         btn.addClass("script-editor-storyboard-action");
