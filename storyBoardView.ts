@@ -54,6 +54,7 @@ export class StoryBoardView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    await Promise.resolve(); // Satisfy async requirement
     this.addAction("pencil", "Live view", async () => {
       if (this.file) {
         await this.leaf.setViewState({
@@ -551,7 +552,7 @@ export class StoryBoardView extends ItemView {
     });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "e.g. Int. Kitchen - Day" },
+      attr: { type: "text", placeholder: "e.g. Int. kitchen - day" },
     });
     titleInput.value = title;
     titleInput.focus();
@@ -697,6 +698,7 @@ export class StoryBoardView extends ItemView {
   }
 
   private async runAIBeat(blocks: ScriptBlock[], blockIdx: number) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const settings = (this.app as any).plugins.getPlugin(
       "script-editor"
     )?.settings;
@@ -749,6 +751,7 @@ export class StoryBoardView extends ItemView {
   }
 
   private async runBulkAIBeat(blocks: ScriptBlock[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const settings = (this.app as any).plugins.getPlugin(
       "script-editor"
     )?.settings;

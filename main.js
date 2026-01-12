@@ -19281,6 +19281,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     await this.updateView();
   }
   async onOpen() {
+    await Promise.resolve();
     this.addAction("pencil", "Live view", async () => {
       if (this.file) {
         await this.leaf.setViewState({
@@ -19641,7 +19642,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "e.g. Int. Kitchen - Day" }
+      attr: { type: "text", placeholder: "e.g. Int. kitchen - day" }
     });
     titleInput.value = title;
     titleInput.focus();
@@ -20053,7 +20054,7 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian4.Setting(containerEl).setName("Usage guide").setHeading();
-    new import_obsidian4.Setting(containerEl).setName("AI beat summary (Gemini 2.5 Flash)").setDesc("Get your API key from Google AI Studio.").addText(
+    new import_obsidian4.Setting(containerEl).setName("AI beat summary (Gemini 2.5 flash)").setDesc("Get your API key from Google AI studio.").addText(
       (text) => text.setPlaceholder("Enter your Gemini API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
         this.plugin.settings.geminiApiKey = value.trim();
         await this.plugin.saveSettings();
@@ -20062,19 +20063,19 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     new import_obsidian4.Setting(containerEl).setName("Quick features").setDesc("Automation and creation tools.").setHeading();
     const featuresDiv = containerEl.createDiv();
     featuresDiv.createEl("li", {
-      text: "New script button: Click the scroll icon in the left ribbon to create a new screenplay."
+      text: "New script button: click the scroll icon in the left ribbon to create a new screenplay."
     });
     featuresDiv.createEl("li", {
-      text: "Story board mode: Activate the grid icon in the right sidebar for a holistic view of script structure."
+      text: "Story board mode: activate the grid icon in the right sidebar for a holistic view of script structure."
     });
     featuresDiv.createEl("li", {
-      text: "AI beat summary: Right-click any scene card in story board to generate summaries."
+      text: "AI beat summary: right-click any scene card in story board to generate summaries."
     });
     featuresDiv.createEl("li", {
-      text: "Character quick menu: Type @ to access frequently used character names."
+      text: "Character quick menu: type @ to access frequently used character names."
     });
     featuresDiv.createEl("li", {
-      text: "Renumber scenes: Right-click in the editor to re-order your scene numbers automatically."
+      text: "Renumber scenes: right-click in the editor to re-order your scene numbers automatically."
     });
     new import_obsidian4.Setting(containerEl).setName("Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
     const syntaxDiv = containerEl.createDiv();
@@ -20082,22 +20083,22 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
       text: "Scene heading: Int. / Ext. \u2014 automatic bold and uppercase."
     });
     syntaxDiv.createEl("li", {
-      text: 'Character: @NAME \u2014 Centered. "@" is hidden in preview.'
+      text: 'Character: @NAME \u2014 centered. "@" is hidden in preview.'
     });
     syntaxDiv.createEl("li", {
-      text: "Dialogue: Text below character \u2014 automatically indented."
+      text: "Dialogue: text below character \u2014 automatically indented."
     });
     syntaxDiv.createEl("li", {
-      text: "Parenthetical: (emotion) / OS: / VO: \u2014 Centered & italic."
+      text: "Parenthetical: (emotion) / OS: / VO: \u2014 centered and italic."
     });
     syntaxDiv.createEl("li", {
-      text: "Transition: CUT TO: / FADE IN \u2014 Right aligned."
+      text: "Transition: CUT TO: / FADE IN \u2014 right aligned."
     });
     const supportDiv = containerEl.createEl("div", {
       cls: "script-editor-settings-support"
     });
     supportDiv.createEl("p", {
-      text: "If you enjoy using Script Editor, consider supporting its development!"
+      text: "If you enjoy using script editor, consider supporting its development!"
     });
     const sponsorActions = supportDiv.createDiv({
       cls: "script-editor-sponsor-actions"
@@ -20283,15 +20284,19 @@ function registerMenus(plugin) {
     )
   );
   plugin.registerEvent(
-    app.workspace.on("view-actions-menu", (menu, view) => {
-      if (view instanceof import_obsidian5.MarkdownView && plugin.isScript(view.file)) {
-        menu.addItem((item) => {
-          item.setTitle("Open story board").setIcon("layout-grid").onClick(() => {
-            void plugin.openStoryBoard(view.leaf, view.file);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    app.workspace.on(
+      "view-actions-menu",
+      (menu, view) => {
+        if (view instanceof import_obsidian5.MarkdownView && plugin.isScript(view.file)) {
+          menu.addItem((item) => {
+            item.setTitle("Open story board").setIcon("layout-grid").onClick(() => {
+              void plugin.openStoryBoard(view.leaf, view.file);
+            });
           });
-        });
+        }
       }
-    })
+    )
   );
   plugin.registerEvent(
     app.workspace.on("file-menu", (menu, file) => {
@@ -20652,7 +20657,7 @@ async function aiScriptDoctor(plugin, editor) {
   const targetBlock = blocks[targetBlockIdx];
   const before = blocks.slice(Math.max(0, targetBlockIdx - 5), targetBlockIdx).map((b) => b.contentLines.join("\n")).join("\n---\n");
   const after = blocks.slice(targetBlockIdx + 1, Math.min(blocks.length, targetBlockIdx + 6)).map((b) => b.contentLines.join("\n")).join("\n---\n");
-  new import_obsidian5.Notice("\u{1F916} Consulting script doctor...");
+  new import_obsidian5.Notice("Consulting script doctor...");
   const gemini = new GeminiService(apiKey);
   const sceneBody = targetBlock.contentLines.join("\n").trim();
   const response = await gemini.generateBrainstormQuestions(
@@ -20682,7 +20687,7 @@ async function aiScriptDoctor(plugin, editor) {
     { line: startLine, ch: 0 },
     { line: endLine, ch: lines[endLine].length }
   );
-  new import_obsidian5.Notice("\u{1F9E0} Script doctor questions added!");
+  new import_obsidian5.Notice("Script doctor questions added!");
 }
 async function aiSummaryAndRewrite(plugin, editor) {
   const apiKey = plugin.settings.geminiApiKey;
@@ -20780,7 +20785,7 @@ async function aiSummaryAndRewrite(plugin, editor) {
       { line: startLine, ch: 0 },
       { line: endLine, ch: lines[endLine].length }
     );
-    new import_obsidian5.Notice("\u{1F9E0} Scene was empty. Script doctor's questions added.");
+    new import_obsidian5.Notice("Scene was empty. Script doctor's questions added.");
   } else {
     const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
     const contentParts = aiText.split(/CONTENT:\s*/i);
@@ -20811,7 +20816,7 @@ async function aiSummaryAndRewrite(plugin, editor) {
       { line: startLine, ch: 0 },
       { line: endLine, ch: lines[endLine].length }
     );
-    new import_obsidian5.Notice("\u2728 Scene rewritten!");
+    new import_obsidian5.Notice("Scene rewritten!");
   }
 }
 

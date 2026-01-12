@@ -244,18 +244,22 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
 
   // 5a. Add Storyboard toggle to view header
   plugin.registerEvent(
-    (app.workspace as any).on("view-actions-menu", (menu: Menu, view: any) => {
-      if (view instanceof MarkdownView && plugin.isScript(view.file)) {
-        menu.addItem((item: MenuItem) => {
-          item
-            .setTitle("Open story board")
-            .setIcon("layout-grid")
-            .onClick(() => {
-              void plugin.openStoryBoard(view.leaf, view.file);
-            });
-        });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (app.workspace as any).on(
+      "view-actions-menu",
+      (menu: Menu, view: MarkdownView) => {
+        if (view instanceof MarkdownView && plugin.isScript(view.file)) {
+          menu.addItem((item: MenuItem) => {
+            item
+              .setTitle("Open story board")
+              .setIcon("layout-grid")
+              .onClick(() => {
+                void plugin.openStoryBoard(view.leaf, view.file);
+              });
+          });
+        }
       }
-    })
+    )
   );
 
   // 6. File Explorer Context Menu
@@ -743,7 +747,7 @@ export async function aiScriptDoctor(
     .map((b) => b.contentLines.join("\n"))
     .join("\n---\n");
 
-  new Notice("🤖 Consulting script doctor...");
+  new Notice("Consulting script doctor...");
   const gemini = new GeminiService(apiKey);
 
   const sceneBody = targetBlock.contentLines.join("\n").trim();
@@ -798,7 +802,7 @@ export async function aiScriptDoctor(
     { line: endLine, ch: lines[endLine].length }
   );
 
-  new Notice("🧠 Script doctor questions added!");
+  new Notice("Script doctor questions added!");
 }
 
 export async function aiSummaryAndRewrite(
@@ -951,7 +955,7 @@ export async function aiSummaryAndRewrite(
       { line: startLine, ch: 0 },
       { line: endLine, ch: lines[endLine].length }
     );
-    new Notice("🧠 Scene was empty. Script doctor's questions added.");
+    new Notice("Scene was empty. Script doctor's questions added.");
   } else {
     // Handle Rewrite response (standard replacement)
     const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
@@ -991,6 +995,6 @@ export async function aiSummaryAndRewrite(
       { line: startLine, ch: 0 },
       { line: endLine, ch: lines[endLine].length }
     );
-    new Notice("✨ Scene rewritten!");
+    new Notice("Scene rewritten!");
   }
 }

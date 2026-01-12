@@ -28,8 +28,8 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName("Usage guide").setHeading();
 
     new Setting(containerEl)
-      .setName("AI beat summary (Gemini 2.5 Flash)")
-      .setDesc("Get your API key from Google AI Studio.")
+      .setName("AI beat summary (Gemini 2.5 flash)")
+      .setDesc("Get your API key from Google AI studio.")
       .addText((text) =>
         text
           .setPlaceholder("Enter your Gemini API key")
@@ -49,19 +49,19 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
 
     const featuresDiv = containerEl.createDiv();
     featuresDiv.createEl("li", {
-      text: "New script button: Click the scroll icon in the left ribbon to create a new screenplay.",
+      text: "New script button: click the scroll icon in the left ribbon to create a new screenplay.",
     });
     featuresDiv.createEl("li", {
-      text: "Story board mode: Activate the grid icon in the right sidebar for a holistic view of script structure.",
+      text: "Story board mode: activate the grid icon in the right sidebar for a holistic view of script structure.",
     });
     featuresDiv.createEl("li", {
-      text: "AI beat summary: Right-click any scene card in story board to generate summaries.",
+      text: "AI beat summary: right-click any scene card in story board to generate summaries.",
     });
     featuresDiv.createEl("li", {
-      text: "Character quick menu: Type @ to access frequently used character names.",
+      text: "Character quick menu: type @ to access frequently used character names.",
     });
     featuresDiv.createEl("li", {
-      text: "Renumber scenes: Right-click in the editor to re-order your scene numbers automatically.",
+      text: "Renumber scenes: right-click in the editor to re-order your scene numbers automatically.",
     });
 
     // Screenplay Syntax
@@ -75,16 +75,16 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
       text: "Scene heading: Int. / Ext. — automatic bold and uppercase.",
     });
     syntaxDiv.createEl("li", {
-      text: 'Character: @NAME — Centered. "@" is hidden in preview.',
+      text: 'Character: @NAME — centered. "@" is hidden in preview.',
     });
     syntaxDiv.createEl("li", {
-      text: "Dialogue: Text below character — automatically indented.",
+      text: "Dialogue: text below character — automatically indented.",
     });
     syntaxDiv.createEl("li", {
-      text: "Parenthetical: (emotion) / OS: / VO: — Centered & italic.",
+      text: "Parenthetical: (emotion) / OS: / VO: — centered and italic.",
     });
     syntaxDiv.createEl("li", {
-      text: "Transition: CUT TO: / FADE IN — Right aligned.",
+      text: "Transition: CUT TO: / FADE IN — right aligned.",
     });
 
     // Support
@@ -92,7 +92,7 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
       cls: "script-editor-settings-support",
     });
     supportDiv.createEl("p", {
-      text: "If you enjoy using Script Editor, consider supporting its development!",
+      text: "If you enjoy using script editor, consider supporting its development!",
     });
 
     const sponsorActions = supportDiv.createDiv({
