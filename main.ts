@@ -1,248 +1,301 @@
-import { Plugin, MarkdownView, Editor, Menu, App, PluginSettingTab, Setting, MenuItem, TFile, TFolder, Notice, WorkspaceLeaf, editorLivePreviewField, EditorSuggest, EditorPosition, EditorSuggestTriggerInfo, EditorSuggestContext } from 'obsidian';
-import { DocxExporter } from './docxExporter';
-import { StoryBoardView, STORYBOARD_VIEW_TYPE } from './storyBoardView';
-import { registerReadingView } from './readingView';
-import { livePreviewExtension } from './editorExtension';
-import { ScriptEditorSettings, DEFAULT_SETTINGS, ScriptEditorSettingTab } from './settings';
-import { registerMenus, ExtendedMenuItem } from './menus';
-import { CharacterSuggest } from './suggest';
+import {
+  Plugin,
+  MarkdownView,
+  Editor,
+  Menu,
+  App,
+  PluginSettingTab,
+  Setting,
+  MenuItem,
+  TFile,
+  TFolder,
+  Notice,
+  WorkspaceLeaf,
+  editorLivePreviewField,
+  EditorSuggest,
+  EditorPosition,
+  EditorSuggestTriggerInfo,
+  EditorSuggestContext,
+} from "obsidian";
+import { DocxExporter } from "./docxExporter";
+import { StoryBoardView, STORYBOARD_VIEW_TYPE } from "./storyBoardView";
+import { registerReadingView } from "./readingView";
+import { livePreviewExtension } from "./editorExtension";
+import {
+  ScriptEditorSettings,
+  DEFAULT_SETTINGS,
+  ScriptEditorSettingTab,
+} from "./settings";
+import { registerMenus, ExtendedMenuItem } from "./menus";
+import { CharacterSuggest } from "./suggest";
 
 // Script Symbols
 export const SCRIPT_MARKERS = {
-    CHARACTER: '@',
-    PARENTHETICAL: '(',
+  CHARACTER: "@",
+  PARENTHETICAL: "(",
 };
 
 // Regex Definitions
-export const SCENE_REGEX = /^\s*(###\s+|(?:\d+[.\s]\s*)?(?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
-export const TRANSITION_REGEX = /^\s*((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
-export const PARENTHETICAL_REGEX = /^\s*(\(|（).+(\)|）)\s*$/i;
+export const SCENE_REGEX =
+  /^\s*(###\s+|(?:\d+[.\s]\s*)?(?:INT|EXT|INT\/EXT|I\/E)[.\s])/i;
+export const TRANSITION_REGEX =
+  /^\s*((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
+export const PARENTHETICAL_REGEX = /^\s*([(（]).+([)）])\s*$/i;
 export const OS_DIALOGUE_REGEX = /^\s*(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
-export const CHARACTER_COLON_REGEX = /^\s*([\u4e00-\u9fa5A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?)([:：])\s*$/;
-export const CHARACTER_CAPS_REGEX = /^\s*(?=.*[A-Z])[A-Z0-9\s-]{1,30}(?:\s*[\(（].*?[\)）])?$/;
-export const COLOR_TAG_REGEX = /^\s*%%color:\s*(red|blue|green|yellow|purple|none|无|無)\s*%%$/i;
+export const CHARACTER_COLON_REGEX =
+  /^\s*([\u4e00-\u9fa5A-Z0-9\s-]{1,30}(?:\s*[(（].*?[)）])?)([:：])\s*$/;
+export const CHARACTER_CAPS_REGEX =
+  /^\s*(?=.*[A-Z])[A-Z0-9\s-]{1,30}(?:\s*[(（].*?[)）])?$/;
+export const COLOR_TAG_REGEX =
+  /^\s*%%color:\s*(red|blue|green|yellow|purple|none|无|無)\s*%%$/i;
 export const SUMMARY_REGEX = /^\s*%%summary:\s*(.*?)\s*%%$/i;
 export const NOTE_REGEX = /^\s*%%note:\s*(.*)%%$/i;
 
 // CSS Classes (Reading Mode / PDF)
 export const CSS_CLASSES = {
-    SCENE: 'script-scene',
-    CHARACTER: 'script-character',
-    DIALOGUE: 'script-dialogue',
-    PARENTHETICAL: 'script-parenthetical',
-    TRANSITION: 'script-transition',
-    ACTION: 'script-action'
+  SCENE: "script-scene",
+  CHARACTER: "script-character",
+  DIALOGUE: "script-dialogue",
+  PARENTHETICAL: "script-parenthetical",
+  TRANSITION: "script-transition",
+  ACTION: "script-action",
 };
 
 // LP Classes (Live Preview / Editing Mode)
 export const LP_CLASSES = {
-    SCENE: 'lp-scene',
-    CHARACTER: 'lp-character',
-    DIALOGUE: 'lp-dialogue',
-    PARENTHETICAL: 'lp-parenthetical',
-    TRANSITION: 'lp-transition',
-    NOTE: 'lp-note',
-    SYMBOL: 'lp-marker-symbol'
-}
+  SCENE: "lp-scene",
+  CHARACTER: "lp-character",
+  DIALOGUE: "lp-dialogue",
+  PARENTHETICAL: "lp-parenthetical",
+  TRANSITION: "lp-transition",
+  NOTE: "lp-note",
+  SYMBOL: "lp-marker-symbol",
+};
 
 export interface ScriptFormat {
-    cssClass: string;
-    removePrefix: boolean;
-    markerLength: number;
-    typeKey: string;
+  cssClass: string;
+  removePrefix: boolean;
+  markerLength: number;
+  typeKey: string;
 }
-
 
 export default class ScriptEditorPlugin extends Plugin {
-    docxExporter: DocxExporter;
-    settings: ScriptEditorSettings;
+  docxExporter: DocxExporter;
+  settings: ScriptEditorSettings;
 
-    async onload() {
-        this.docxExporter = new DocxExporter();
+  async onload() {
+    this.docxExporter = new DocxExporter();
 
-        this.registerView(
-            STORYBOARD_VIEW_TYPE,
-            (leaf) => new StoryBoardView(leaf)
-        );
+    this.registerView(STORYBOARD_VIEW_TYPE, (leaf) => new StoryBoardView(leaf));
 
-        // 2. Settings / Help Tab
-        await this.loadSettings();
-        this.addSettingTab(new ScriptEditorSettingTab(this.app, this));
+    // 2. Settings / Help Tab
+    await this.loadSettings();
+    this.addSettingTab(new ScriptEditorSettingTab(this.app, this));
 
-        // 3. Post Processor (Reading Mode & PDF)
-        registerReadingView(this);
+    // 3. Post Processor (Reading Mode & PDF)
+    registerReadingView(this);
 
-        // 4. Editor Extension (Live Preview)
-        this.registerEditorExtension(livePreviewExtension(this));
+    // 4. Editor Extension (Live Preview)
+    this.registerEditorExtension(livePreviewExtension(this));
 
-        // 4a. Automatic Cleanup for Empty Notes
-        this.registerEvent(
-            this.app.workspace.on("editor-change", (editor: Editor) => {
-                const lineCount = editor.lineCount();
-                const cursor = editor.getCursor();
+    // 4a. Automatic Cleanup for Empty Notes
+    this.registerEvent(
+      this.app.workspace.on("editor-change", (editor: Editor) => {
+        const lineCount = editor.lineCount();
+        const cursor = editor.getCursor();
 
-                // Only check the current line for performance and better UX
-                const lineText = editor.getLine(cursor.line).trim();
+        // Only check the current line for performance and better UX
+        const lineText = editor.getLine(cursor.line).trim();
 
-                // If the line is EXACTLY the markers with no content
-                if (lineText === "%%note:%%") {
-                    // Delete the line
-                    const from = { line: cursor.line, ch: 0 };
-                    const to = { line: cursor.line, ch: editor.getLine(cursor.line).length };
+        // If the line is EXACTLY the markers with no content
+        if (lineText === "%%note:%%") {
+          // Delete the line
+          const from = { line: cursor.line, ch: 0 };
+          const to = {
+            line: cursor.line,
+            ch: editor.getLine(cursor.line).length,
+          };
 
-                    // If it's not the only line, try to include the newline
-                    if (lineCount > 1) {
-                        if (cursor.line < lineCount - 1) {
-                            to.line = cursor.line + 1;
-                            to.ch = 0;
-                        } else if (cursor.line > 0) {
-                            from.line = cursor.line - 1;
-                            from.ch = editor.getLine(from.line).length;
-                        }
-                    }
-
-                    editor.replaceRange("", from, to);
-                }
-            })
-        );
-
-
-        // 5. Context Menus & Buttons
-        registerMenus(this);
-
-        this.app.metadataCache.on('changed', () => {
-            this.refreshStoryBoard(true);
-        })
-
-        // 6. 動態同步：當打開新檔案時，自動更新 Story Board
-        this.registerEvent(
-            this.app.workspace.on('file-open', (file) => {
-                if (file instanceof TFile) {
-                    const leaves = this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
-                    leaves.forEach(async leaf => {
-                        if (leaf.view instanceof StoryBoardView) {
-                            if (this.isScript(file)) {
-                                await leaf.view.setFile(file);
-                            } else {
-                                // 如果不是劇本，清空 Story Board
-                                leaf.view.file = null;
-                                leaf.view.updateView();
-                            }
-                        }
-                    });
-                }
-            })
-        );
-
-
-        // 8. Register Character Suggest (Editor Logic)
-        this.registerEditorSuggest(new CharacterSuggest(this.app, this));
-    }
-    refreshStoryBoard(force = false) {
-        const activeFile = this.app.workspace.getActiveFile();
-        const leaves = this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
-
-        leaves.forEach(leaf => {
-            if (leaf.view instanceof StoryBoardView) {
-                // If it's a metadata change, only refresh if the file matches
-                if (force && leaf.view.file && activeFile?.path !== leaf.view.file.path) {
-                    return;
-                }
-                leaf.view.updateView();
+          // If it's not the only line, try to include the newline
+          if (lineCount > 1) {
+            if (cursor.line < lineCount - 1) {
+              to.line = cursor.line + 1;
+              to.ch = 0;
+            } else if (cursor.line > 0) {
+              from.line = cursor.line - 1;
+              from.ch = editor.getLine(from.line).length;
             }
-        });
-    }
+          }
 
-
-    async openStoryBoard(leaf: WorkspaceLeaf, file: TFile) {
-        await leaf.setViewState({
-            type: STORYBOARD_VIEW_TYPE,
-            active: true,
-            state: { file: file.path }
-        });
-        const view = leaf.view;
-        if (view instanceof StoryBoardView) {
-            await view.setFile(file);
+          editor.replaceRange("", from, to);
         }
-    }
+      })
+    );
 
-    isScript(file: TFile | null): boolean {
-        if (!file) return false;
-        const cache = this.app.metadataCache.getFileCache(file);
-        const cssClasses = cache?.frontmatter?.cssclasses;
-        const classesArray = Array.isArray(cssClasses) ? cssClasses : (typeof cssClasses === 'string' ? [cssClasses] : []);
-        return classesArray.includes('fountain') || classesArray.includes('script');
-    }
+    // 5. Context Menus & Buttons
+    registerMenus(this);
 
-    onunload() {
-        // cleanup
-    }
+    this.app.metadataCache.on("changed", () => {
+      this.refreshStoryBoard(true);
+    });
 
-    // ------------------------------------------------------------------
-    // Core Logic
-    // ------------------------------------------------------------------
-
-
-
-    exportExplicitFormat(text: string): ScriptFormat | null {
-        return this.detectExplicitFormat(text);
-    }
-
-    detectExplicitFormat(text: string): ScriptFormat | null {
-        if (SCENE_REGEX.test(text)) {
-            const isH3Scene = text.startsWith('###');
-            return {
-                cssClass: CSS_CLASSES.SCENE,
-                removePrefix: isH3Scene,
-                markerLength: isH3Scene ? 3 : 0,
-                typeKey: 'SCENE'
-            };
+    // 6. 動態同步：當打開新檔案時，自動更新 Story Board
+    this.registerEvent(
+      this.app.workspace.on("file-open", (file) => {
+        if (file instanceof TFile) {
+          const leaves =
+            this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
+          leaves.forEach((leaf) => {
+            if (leaf.view instanceof StoryBoardView) {
+              if (this.isScript(file)) {
+                void leaf.view.setFile(file);
+              } else {
+                // 如果不是劇本，清空 Story Board
+                leaf.view.file = null;
+                void leaf.view.updateView();
+              }
+            }
+          });
         }
-        if (TRANSITION_REGEX.test(text)) {
-            return { cssClass: CSS_CLASSES.TRANSITION, removePrefix: false, markerLength: 0, typeKey: 'TRANSITION' };
-        }
-        if (PARENTHETICAL_REGEX.test(text)) {
-            return { cssClass: CSS_CLASSES.PARENTHETICAL, removePrefix: false, markerLength: 0, typeKey: 'PARENTHETICAL' };
-        }
-        if (OS_DIALOGUE_REGEX.test(text)) {
-            return { cssClass: CSS_CLASSES.PARENTHETICAL, removePrefix: false, markerLength: 0, typeKey: 'PARENTHETICAL' };
-        }
-        // Strict Character Identification:
-        // 1. Starts with @
-        if (text.startsWith(SCRIPT_MARKERS.CHARACTER))
-            return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: true, markerLength: 1, typeKey: 'CHARACTER' };
+      })
+    );
 
-        // 2. Ends with a colon (standalone line, colon at end)
-        const hasColon = CHARACTER_COLON_REGEX.test(text);
+    // 8. Register Character Suggest (Editor Logic)
+    this.registerEditorSuggest(new CharacterSuggest(this.app, this));
+  }
+  refreshStoryBoard(force = false) {
+    const activeFile = this.app.workspace.getActiveFile();
+    const leaves = this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
 
-        // 3. Full English CAPS (Must contain at least one A-Z letter and no lowercase)
-        const isAllCapsEng = CHARACTER_CAPS_REGEX.test(text);
-
-        if (hasColon || isAllCapsEng) {
-            return { cssClass: CSS_CLASSES.CHARACTER, removePrefix: false, markerLength: 0, typeKey: 'CHARACTER' };
+    leaves.forEach((leaf) => {
+      if (leaf.view instanceof StoryBoardView) {
+        // If it's a metadata change, only refresh if the file matches
+        if (
+          force &&
+          leaf.view.file &&
+          activeFile?.path !== leaf.view.file.path
+        ) {
+          return;
         }
+        void leaf.view.updateView();
+      }
+    });
+  }
 
-        return null;
+  async openStoryBoard(leaf: WorkspaceLeaf, file: TFile) {
+    await leaf.setViewState({
+      type: STORYBOARD_VIEW_TYPE,
+      active: true,
+      state: { file: file.path },
+    });
+    const view = leaf.view;
+    if (view instanceof StoryBoardView) {
+      await view.setFile(file);
+    }
+  }
+
+  isScript(file: TFile | null): file is TFile {
+    if (!file) return false;
+    const cache = this.app.metadataCache.getFileCache(file);
+    const cssClasses = cache?.frontmatter?.cssclasses;
+    const classesArray = Array.isArray(cssClasses)
+      ? cssClasses
+      : typeof cssClasses === "string"
+      ? [cssClasses]
+      : [];
+    return classesArray.includes("fountain") || classesArray.includes("script");
+  }
+
+  onunload() {
+    // cleanup
+  }
+
+  // ------------------------------------------------------------------
+  // Core Logic
+  // ------------------------------------------------------------------
+
+  exportExplicitFormat(text: string): ScriptFormat | null {
+    return this.detectExplicitFormat(text);
+  }
+
+  detectExplicitFormat(text: string): ScriptFormat | null {
+    if (SCENE_REGEX.test(text)) {
+      const isH3Scene = text.startsWith("###");
+      return {
+        cssClass: CSS_CLASSES.SCENE,
+        removePrefix: isH3Scene,
+        markerLength: isH3Scene ? 3 : 0,
+        typeKey: "SCENE",
+      };
+    }
+    if (TRANSITION_REGEX.test(text)) {
+      return {
+        cssClass: CSS_CLASSES.TRANSITION,
+        removePrefix: false,
+        markerLength: 0,
+        typeKey: "TRANSITION",
+      };
+    }
+    if (PARENTHETICAL_REGEX.test(text)) {
+      return {
+        cssClass: CSS_CLASSES.PARENTHETICAL,
+        removePrefix: false,
+        markerLength: 0,
+        typeKey: "PARENTHETICAL",
+      };
+    }
+    if (OS_DIALOGUE_REGEX.test(text)) {
+      return {
+        cssClass: CSS_CLASSES.PARENTHETICAL,
+        removePrefix: false,
+        markerLength: 0,
+        typeKey: "PARENTHETICAL",
+      };
+    }
+    // Strict Character Identification:
+    // 1. Starts with @
+    if (text.startsWith(SCRIPT_MARKERS.CHARACTER))
+      return {
+        cssClass: CSS_CLASSES.CHARACTER,
+        removePrefix: true,
+        markerLength: 1,
+        typeKey: "CHARACTER",
+      };
+
+    // 2. Ends with a colon (standalone line, colon at end)
+    const hasColon = CHARACTER_COLON_REGEX.test(text);
+
+    // 3. Full English CAPS (Must contain at least one A-Z letter and no lowercase)
+    const isAllCapsEng = CHARACTER_CAPS_REGEX.test(text);
+
+    if (hasColon || isAllCapsEng) {
+      return {
+        cssClass: CSS_CLASSES.CHARACTER,
+        removePrefix: false,
+        markerLength: 0,
+        typeKey: "CHARACTER",
+      };
     }
 
-    /**
-     * 從原始文字中提取純淨的名字（去除 @, 冒號, 括號內容）
-     */
-    getCleanCharacterName(text: string): string {
-        let name = text;
-        if (name.startsWith(SCRIPT_MARKERS.CHARACTER)) name = name.substring(1);
-        name = name.replace(/[:：]\s*$/, '');
-        name = name.replace(/[\(（].*?[\)）]/g, '');
-        return name.trim();
-    }
+    return null;
+  }
 
-    async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    }
+  /**
+   * 從原始文字中提取純淨的名字（去除 @, 冒號, 括號內容）
+   */
+  getCleanCharacterName(text: string): string {
+    let name = text;
+    if (name.startsWith(SCRIPT_MARKERS.CHARACTER)) name = name.substring(1);
+    name = name.replace(/[:：]\s*$/, "");
+    name = name.replace(/[(（].*?[)）]/g, "");
+    return name.trim();
+  }
 
-    async saveSettings() {
-        await this.saveData(this.settings);
-    }
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
 }
-
-

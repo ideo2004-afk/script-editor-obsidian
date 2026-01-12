@@ -1,298 +1,392 @@
-import { Menu, MenuItem, Editor, MarkdownView, TFile, TFolder, WorkspaceLeaf, Notice, setIcon } from 'obsidian';
-import ScriptEditorPlugin, { SCRIPT_MARKERS, SCENE_REGEX, SUMMARY_REGEX, COLOR_TAG_REGEX } from './main';
-import { DocxExporter } from './docxExporter';
-import { GeminiService } from './ai';
+import {
+  Menu,
+  MenuItem,
+  Editor,
+  MarkdownView,
+  TFile,
+  TFolder,
+  WorkspaceLeaf,
+  Notice,
+  setIcon,
+} from "obsidian";
+import ScriptEditorPlugin, {
+  SCRIPT_MARKERS,
+  SCENE_REGEX,
+  SUMMARY_REGEX,
+  COLOR_TAG_REGEX,
+} from "./main";
+import { DocxExporter } from "./docxExporter";
+import { GeminiService } from "./ai";
 
 export interface ExtendedMenuItem extends MenuItem {
-    setSubmenu(): Menu;
+  setSubmenu(): Menu;
 }
 
 export function registerMenus(plugin: ScriptEditorPlugin) {
-    const { app } = plugin;
+  const { app } = plugin;
 
-    // 1. Ribbon Icon
-    plugin.addRibbonIcon('scroll-text', 'New script', async () => {
-        await createNewScript(plugin);
-    });
+  // 1. Ribbon Icon
+  plugin.addRibbonIcon("scroll-text", "New script", async () => {
+    await createNewScript(plugin);
+  });
 
-    // 2. Commands
-    plugin.addCommand({
-        id: 'renumber-scenes',
-        name: 'Renumber scenes',
-        editorCallback: (editor: Editor) => renumberScenes(plugin, editor)
-    });
+  // 2. Commands
+  plugin.addCommand({
+    id: "renumber-scenes",
+    name: "Renumber scenes",
+    editorCallback: (editor: Editor) => renumberScenes(plugin, editor),
+  });
 
-    plugin.addCommand({
-        id: 'create-new-script',
-        name: 'Create new script',
-        callback: async () => {
-            await createNewScript(plugin);
+  plugin.addCommand({
+    id: "create-new-script",
+    name: "Create new script",
+    callback: async () => {
+      await createNewScript(plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: "export-to-docx",
+    name: "Export current script to .docx",
+    checkCallback: (checking: boolean) => {
+      const view = app.workspace.getActiveViewOfType(MarkdownView);
+      if (view && plugin.isScript(view.file)) {
+        if (!checking) {
+          void exportFileToDocx(plugin, view.file);
         }
-    });
+        return true;
+      }
+      return false;
+    },
+  });
 
-    plugin.addCommand({
-        id: 'export-to-docx',
-        name: 'Export current script to .docx',
-        checkCallback: (checking: boolean) => {
-            const view = app.workspace.getActiveViewOfType(MarkdownView);
-            if (view && plugin.isScript(view.file)) {
-                if (!checking) {
-                    void exportFileToDocx(plugin, view.file!);
-                }
-                return true;
-            }
-            return false;
+  plugin.addCommand({
+    id: "open-story-board",
+    name: "Open story board for current script",
+    checkCallback: (checking: boolean) => {
+      const view = app.workspace.getActiveViewOfType(MarkdownView);
+      if (view && plugin.isScript(view.file)) {
+        if (!checking) {
+          void plugin.openStoryBoard(view.leaf, view.file);
         }
-    });
+        return true;
+      }
+      return false;
+    },
+  });
 
-    plugin.addCommand({
-        id: 'open-story-board',
-        name: 'Open story board for current script',
-        checkCallback: (checking: boolean) => {
-            const view = app.workspace.getActiveViewOfType(MarkdownView);
-            if (view && plugin.isScript(view.file)) {
-                if (!checking) {
-                    void plugin.openStoryBoard(view.leaf, view.file!);
-                }
-                return true;
-            }
-            return false;
+  plugin.addCommand({
+    id: "export-summary",
+    name: "Export scene summaries to .md",
+    checkCallback: (checking: boolean) => {
+      const view = app.workspace.getActiveViewOfType(MarkdownView);
+      if (view && plugin.isScript(view.file)) {
+        if (!checking) {
+          void exportSummary(plugin, view.file);
         }
-    });
+        return true;
+      }
+      return false;
+    },
+  });
 
+  plugin.addCommand({
+    id: "ai-script-doctor",
+    name: "AI Script Doctor",
+    editorCallback: (editor: Editor) => aiScriptDoctor(plugin, editor),
+  });
 
-    plugin.addCommand({
-        id: 'export-summary',
-        name: 'Export scene summaries to .md',
-        checkCallback: (checking: boolean) => {
-            const view = app.workspace.getActiveViewOfType(MarkdownView);
-            if (view && plugin.isScript(view.file)) {
-                if (!checking) {
-                    void exportSummary(plugin, view.file!);
-                }
-                return true;
-            }
-            return false;
-        }
-    });
+  plugin.addCommand({
+    id: "ai-rewrite-scene",
+    name: "AI Rewrite Scene",
+    editorCallback: (editor: Editor) => aiSummaryAndRewrite(plugin, editor),
+  });
 
-    plugin.addCommand({
-        id: 'ai-script-doctor',
-        name: 'AI Script Doctor',
-        editorCallback: (editor: Editor) => aiScriptDoctor(plugin, editor)
-    });
+  // 3. Editor Context Menu
+  plugin.registerEvent(
+    app.workspace.on(
+      "editor-menu",
+      (menu: Menu, editor: Editor, view: MarkdownView) => {
+        if (!plugin.isScript(view.file)) return;
 
-    plugin.addCommand({
-        id: 'ai-rewrite-scene',
-        name: 'AI Rewrite Scene',
-        editorCallback: (editor: Editor) => aiSummaryAndRewrite(plugin, editor)
-    });
+        menu.addItem((item: MenuItem) => {
+          item.setTitle("Script Editor").setIcon("film");
+          const subMenu = (item as ExtendedMenuItem).setSubmenu();
 
-    // 3. Editor Context Menu
-    plugin.registerEvent(
-        app.workspace.on("editor-menu", (menu: Menu, editor: Editor, view: MarkdownView) => {
-            if (!plugin.isScript(view.file)) return;
+          // Scene Heading Submenu
+          subMenu.addItem((startItem: MenuItem) => {
+            startItem.setTitle("Scene heading").setIcon("clapperboard");
+            const sceneMenu = (startItem as ExtendedMenuItem).setSubmenu();
+            sceneMenu.addItem((i: MenuItem) =>
+              i
+                .setTitle("EXT.")
+                .onClick(() => insertText(editor, "EXT. ", false))
+            );
+            sceneMenu.addItem((i: MenuItem) =>
+              i
+                .setTitle("INT.")
+                .onClick(() => insertText(editor, "INT. ", false))
+            );
+            sceneMenu.addItem((i: MenuItem) =>
+              i
+                .setTitle("I/E.")
+                .onClick(() => insertText(editor, "INT./EXT. ", false))
+            );
+          });
 
-            menu.addItem((item: MenuItem) => {
-                item.setTitle("Script Editor").setIcon("film");
-                const subMenu = (item as ExtendedMenuItem).setSubmenu();
+          addMenuItem(
+            subMenu,
+            "Character (@)",
+            "user",
+            editor,
+            SCRIPT_MARKERS.CHARACTER,
+            plugin
+          );
+          addMenuItem(
+            subMenu,
+            "Parenthetical ( ( )",
+            "italic",
+            editor,
+            SCRIPT_MARKERS.PARENTHETICAL,
+            plugin
+          );
 
-                // Scene Heading Submenu
-                subMenu.addItem((startItem: MenuItem) => {
-                    startItem.setTitle("Scene heading").setIcon("clapperboard");
-                    const sceneMenu = (startItem as ExtendedMenuItem).setSubmenu();
-                    sceneMenu.addItem((i: MenuItem) => i.setTitle("EXT.").onClick(() => insertText(editor, "EXT. ", false)));
-                    sceneMenu.addItem((i: MenuItem) => i.setTitle("INT.").onClick(() => insertText(editor, "INT. ", false)));
-                    sceneMenu.addItem((i: MenuItem) => i.setTitle("I/E.").onClick(() => insertText(editor, "INT./EXT. ", false)));
-                });
+          // Transition Submenu
+          subMenu.addItem((item: MenuItem) => {
+            item.setTitle("Transition").setIcon("arrow-right");
+            const m = (item as ExtendedMenuItem).setSubmenu();
+            m.addItem((i: MenuItem) =>
+              i
+                .setTitle("CUT TO:")
+                .onClick(() => insertText(editor, "CUT TO:", true))
+            );
+            m.addItem((i: MenuItem) =>
+              i
+                .setTitle("FADE OUT.")
+                .onClick(() => insertText(editor, "FADE OUT.", true))
+            );
+            m.addItem((i: MenuItem) =>
+              i
+                .setTitle("FADE IN:")
+                .onClick(() => insertText(editor, "FADE IN:", true))
+            );
+            m.addItem((i: MenuItem) =>
+              i
+                .setTitle("DISSOLVE TO:")
+                .onClick(() => insertText(editor, "DISSOLVE TO:", true))
+            );
+          });
 
-                addMenuItem(subMenu, "Character (@)", "user", editor, SCRIPT_MARKERS.CHARACTER, plugin);
-                addMenuItem(subMenu, "Parenthetical ( ( )", "italic", editor, SCRIPT_MARKERS.PARENTHETICAL, plugin);
+          subMenu.addItem((item: MenuItem) => {
+            item
+              .setTitle("Insert Note")
+              .setIcon("sticky-note")
+              .onClick(() =>
+                insertText(editor, "%%note: Note text here%%", true)
+              );
+          });
 
-                // Transition Submenu
-                subMenu.addItem((item: MenuItem) => {
-                    item.setTitle("Transition").setIcon("arrow-right");
-                    const m = (item as ExtendedMenuItem).setSubmenu();
-                    m.addItem((i: MenuItem) => i.setTitle("CUT TO:").onClick(() => insertText(editor, "CUT TO:", true)));
-                    m.addItem((i: MenuItem) => i.setTitle("FADE OUT.").onClick(() => insertText(editor, "FADE OUT.", true)));
-                    m.addItem((i: MenuItem) => i.setTitle("FADE IN:").onClick(() => insertText(editor, "FADE IN:", true)));
-                    m.addItem((i: MenuItem) => i.setTitle("DISSOLVE TO:").onClick(() => insertText(editor, "DISSOLVE TO:", true)));
-                });
+          subMenu.addSeparator();
 
-                subMenu.addItem((item: MenuItem) => {
-                    item.setTitle("Insert Note").setIcon("sticky-note")
-                        .onClick(() => insertText(editor, "%%note: Note text here%%", true));
-                });
+          subMenu.addItem((item) => {
+            item
+              .setTitle("Open Story Board")
+              .setIcon("layout-grid")
+              .onClick(() => {
+                void plugin.openStoryBoard(view.leaf, view.file);
+              });
+          });
 
-                subMenu.addSeparator();
+          subMenu.addItem((item) => {
+            item
+              .setTitle("AI Script Doctor")
+              .setIcon("brain-circuit")
+              .onClick(() => aiScriptDoctor(plugin, editor));
+          });
 
-                subMenu.addItem((item) => {
-                    item.setTitle("Open Story Board")
-                        .setIcon("layout-grid")
-                        .onClick(() => {
-                            void plugin.openStoryBoard(view.leaf, view.file!);
-                        });
-                });
+          subMenu.addItem((item) => {
+            item
+              .setTitle("AI Rewrite Scene")
+              .setIcon("sparkles")
+              .onClick(() => aiSummaryAndRewrite(plugin, editor));
+          });
 
-                subMenu.addItem((item) => {
-                    item.setTitle("AI Script Doctor")
-                        .setIcon("brain-circuit")
-                        .onClick(() => aiScriptDoctor(plugin, editor));
-                });
+          subMenu.addItem((subItem: MenuItem) => {
+            subItem
+              .setTitle("Renumber scenes")
+              .setIcon("list-ordered")
+              .onClick(() => renumberScenes(plugin, editor));
+          });
 
-                subMenu.addItem((item) => {
-                    item.setTitle("AI Rewrite Scene")
-                        .setIcon("sparkles")
-                        .onClick(() => aiSummaryAndRewrite(plugin, editor));
-                });
+          subMenu.addSeparator();
 
-                subMenu.addItem((subItem: MenuItem) => {
-                    subItem.setTitle("Renumber scenes").setIcon("list-ordered")
-                        .onClick(() => renumberScenes(plugin, editor));
-                });
+          subMenu.addItem((subItem: MenuItem) => {
+            subItem
+              .setTitle("Export to .docx")
+              .setIcon("file-output")
+              .onClick(() => {
+                void exportFileToDocx(plugin, view.file);
+              });
+          });
 
-                subMenu.addSeparator();
+          subMenu.addItem((subItem: MenuItem) => {
+            subItem
+              .setTitle("Export summary")
+              .setIcon("file-text")
+              .onClick(() => {
+                void exportSummary(plugin, view.file);
+              });
+          });
+        });
+      }
+    )
+  );
 
-                subMenu.addItem((subItem: MenuItem) => {
-                    subItem.setTitle("Export to .docx").setIcon("file-output")
-                        .onClick(() => {
-                            void exportFileToDocx(plugin, view.file!);
-                        });
-                });
-
-                subMenu.addItem((subItem: MenuItem) => {
-                    subItem.setTitle("Export summary").setIcon("file-text")
-                        .onClick(() => {
-                            void exportSummary(plugin, view.file!);
-                        });
-                });
+  // 5a. Add Storyboard toggle to view header
+  plugin.registerEvent(
+    (app.workspace as any).on("view-actions-menu", (menu: Menu, view: any) => {
+      if (view instanceof MarkdownView && plugin.isScript(view.file)) {
+        menu.addItem((item: MenuItem) => {
+          item
+            .setTitle("Open Story Board")
+            .setIcon("layout-grid")
+            .onClick(() => {
+              void plugin.openStoryBoard(view.leaf, view.file);
             });
-        })
-    );
+        });
+      }
+    })
+  );
 
-    // 5a. Add Storyboard toggle to view header
-    plugin.registerEvent(
-        (app.workspace as any).on("view-actions-menu", (menu: Menu, view: any) => {
-            if (view instanceof MarkdownView && plugin.isScript(view.file)) {
-                menu.addItem((item: MenuItem) => {
-                    item.setTitle("Open Story Board")
-                        .setIcon("layout-grid")
-                        .onClick(() => {
-                            void plugin.openStoryBoard(view.leaf, view.file!);
-                        });
-                });
-            }
-        })
-    );
-
-    // 6. File Explorer Context Menu
-    plugin.registerEvent(
-        app.workspace.on("file-menu", (menu: Menu, file: TFile | TFolder) => {
-            if (file instanceof TFile && file.extension === 'md') {
-                if (plugin.isScript(file)) {
-                    menu.addItem((item) => {
-                        item
-                            .setTitle("Export to .docx")
-                            .setIcon("file-output")
-                            .onClick(async () => {
-                                await exportFileToDocx(plugin, file);
-                            });
-                    });
-
-                    menu.addItem((item) => {
-                        item
-                            .setTitle("Export summary")
-                            .setIcon("file-text")
-                            .onClick(async () => {
-                                await exportSummary(plugin, file);
-                            });
-                    });
-                }
-            }
-
-            menu.addItem((item) => {
-                item
-                    .setTitle("New script")
-                    .setIcon("scroll-text")
-                    .onClick(async () => {
-                        let folderPath = "/";
-                        if (file instanceof TFolder) {
-                            folderPath = file.path;
-                        } else if (file instanceof TFile) {
-                            folderPath = file.parent?.path || "/";
-                        }
-                        await createNewScript(plugin, folderPath);
-                    });
-            });
-        })
-    );
-
-    // Dynamic header button management
-    const updateHeaderButtons = () => {
-        const view = app.workspace.getActiveViewOfType(MarkdownView);
-        if (!view) return;
-
-        const file = view.file;
-        const headerActions = view.containerEl.querySelector('.view-actions');
-        if (!headerActions) return;
-
-        const existingCardBtn = headerActions.querySelector('.script-editor-storyboard-action') as HTMLElement;
-        const existingToggleBtn = headerActions.querySelector('.script-editor-mode-toggle-action') as HTMLElement;
-
+  // 6. File Explorer Context Menu
+  plugin.registerEvent(
+    app.workspace.on("file-menu", (menu: Menu, file: TFile | TFolder) => {
+      if (file instanceof TFile && file.extension === "md") {
         if (plugin.isScript(file)) {
-            // Card Button
-            if (!existingCardBtn) {
-                const btn = view.addAction("layout-grid", "Open Story Board", () => {
-                    void plugin.openStoryBoard(view.leaf, file!);
-                });
-                btn.addClass('script-editor-storyboard-action');
-            } else {
-                existingCardBtn.style.display = '';
-            }
+          menu.addItem((item) => {
+            item
+              .setTitle("Export to .docx")
+              .setIcon("file-output")
+              .onClick(async () => {
+                await exportFileToDocx(plugin, file);
+              });
+          });
 
-            // Mode Toggle Button (Reflect current state)
-            const state = view.leaf.getViewState().state;
-            const isSource = state.mode === 'source' && state.source === true;
-
-            const icon = isSource ? "pencil" : "code";
-            const label = isSource ? "編輯模式" : "原始碼模式";
-
-            if (!existingToggleBtn) {
-                const btn = view.addAction(icon, label, async () => {
-                    const currentState = view.leaf.getViewState();
-                    const nextSource = !(currentState.state.mode === 'source' && currentState.state.source === true);
-                    await view.leaf.setViewState({
-                        ...currentState,
-                        state: {
-                            ...currentState.state,
-                            mode: "source",
-                            source: nextSource
-                        }
-                    });
-                    updateHeaderButtons();
-                });
-                btn.addClass('script-editor-mode-toggle-action');
-            } else {
-                existingToggleBtn.style.display = '';
-                existingToggleBtn.setAttribute('aria-label', label);
-                setIcon(existingToggleBtn, icon);
-            }
-        } else {
-            if (existingCardBtn) existingCardBtn.style.display = 'none';
-            if (existingToggleBtn) existingToggleBtn.style.display = 'none';
+          menu.addItem((item) => {
+            item
+              .setTitle("Export summary")
+              .setIcon("file-text")
+              .onClick(async () => {
+                await exportSummary(plugin, file);
+              });
+          });
         }
-    };
+      }
 
-    plugin.registerEvent(app.workspace.on('file-open', () => updateHeaderButtons()));
-    plugin.registerEvent(app.workspace.on('layout-change', () => updateHeaderButtons()));
+      menu.addItem((item) => {
+        item
+          .setTitle("New script")
+          .setIcon("scroll-text")
+          .onClick(async () => {
+            let folderPath = "/";
+            if (file instanceof TFolder) {
+              folderPath = file.path;
+            } else if (file instanceof TFile) {
+              folderPath = file.parent?.path || "/";
+            }
+            await createNewScript(plugin, folderPath);
+          });
+      });
+    })
+  );
+
+  // Dynamic header button management
+  const updateHeaderButtons = () => {
+    const view = app.workspace.getActiveViewOfType(MarkdownView);
+    if (!view) return;
+
+    const file = view.file;
+    const headerActions = view.containerEl.querySelector(".view-actions");
+    if (!headerActions) return;
+
+    const existingCardBtn = headerActions.querySelector<HTMLElement>(
+      ".script-editor-storyboard-action"
+    );
+    const existingToggleBtn = headerActions.querySelector<HTMLElement>(
+      ".script-editor-mode-toggle-action"
+    );
+
+    if (plugin.isScript(file)) {
+      // Card Button
+      if (!existingCardBtn) {
+        const btn = view.addAction("layout-grid", "Open Story Board", () => {
+          void plugin.openStoryBoard(view.leaf, file);
+        });
+        btn.addClass("script-editor-storyboard-action");
+      } else {
+        existingCardBtn.style.display = "";
+      }
+
+      // Mode Toggle Button (Reflect current state)
+      const state = view.leaf.getViewState().state;
+      const isSource = state.mode === "source" && state.source === true;
+
+      const icon = isSource ? "pencil" : "code";
+      const label = isSource ? "編輯模式" : "原始碼模式";
+
+      if (!existingToggleBtn) {
+        const btn = view.addAction(icon, label, async () => {
+          const currentState = view.leaf.getViewState();
+          const nextSource = !(
+            currentState.state.mode === "source" &&
+            currentState.state.source === true
+          );
+          await view.leaf.setViewState({
+            ...currentState,
+            state: {
+              ...currentState.state,
+              mode: "source",
+              source: nextSource,
+            },
+          });
+          updateHeaderButtons();
+        });
+        btn.addClass("script-editor-mode-toggle-action");
+      } else {
+        existingToggleBtn.style.display = "";
+        existingToggleBtn.setAttribute("aria-label", label);
+        setIcon(existingToggleBtn, icon);
+      }
+    } else {
+      if (existingCardBtn) existingCardBtn.style.display = "none";
+      if (existingToggleBtn) existingToggleBtn.style.display = "none";
+    }
+  };
+
+  plugin.registerEvent(
+    app.workspace.on("file-open", () => updateHeaderButtons())
+  );
+  plugin.registerEvent(
+    app.workspace.on("layout-change", () => updateHeaderButtons())
+  );
 }
 
-function addMenuItem(menu: Menu | MenuItem, title: string, icon: string, editor: Editor, marker: string, plugin: ScriptEditorPlugin) {
-    if (menu instanceof Menu) {
-        menu.addItem((item: MenuItem) => {
-            item.setTitle(title).setIcon(icon).onClick(() => toggleLinePrefix(plugin, editor, marker));
-        });
-    }
+function addMenuItem(
+  menu: Menu | MenuItem,
+  title: string,
+  icon: string,
+  editor: Editor,
+  marker: string,
+  plugin: ScriptEditorPlugin
+) {
+  if (menu instanceof Menu) {
+    menu.addItem((item: MenuItem) => {
+      item
+        .setTitle(title)
+        .setIcon(icon)
+        .onClick(() => toggleLinePrefix(plugin, editor, marker));
+    });
+  }
 }
 
 // ------------------------------------------------------------------
@@ -300,185 +394,201 @@ function addMenuItem(menu: Menu | MenuItem, title: string, icon: string, editor:
 // ------------------------------------------------------------------
 
 export function renumberScenes(plugin: ScriptEditorPlugin, editor: Editor) {
-    const lineCount = editor.lineCount();
-    let sceneCounter = 0;
+  const lineCount = editor.lineCount();
+  let sceneCounter = 0;
 
-    for (let i = 0; i < lineCount; i++) {
-        const line = editor.getLine(i);
-        const trimmed = line.trim();
+  for (let i = 0; i < lineCount; i++) {
+    const line = editor.getLine(i);
+    const trimmed = line.trim();
 
-        if (SCENE_REGEX.test(trimmed)) {
-            sceneCounter++;
-            const sceneNumStr = sceneCounter.toString().padStart(2, '0') + ". ";
+    if (SCENE_REGEX.test(trimmed)) {
+      sceneCounter++;
+      const sceneNumStr = sceneCounter.toString().padStart(2, "0") + ". ";
 
-            // 清理原始行內容：移除舊的 "### ", "數字. ", 或 "."
-            let content = trimmed
-                .replace(/^###\s*/, '')           // 移除開頭的 ### (及其後的空白)
-                .replace(/^\d+[.\s]\s*/, '')      // 移除開頭的舊編號
-                .replace(/^\./, '');              // 移除舊的強制點號
+      // 清理原始行內容：移除舊的 "### ", "數字. ", 或 "."
+      let content = trimmed
+        .replace(/^###\s*/, "") // 移除開頭的 ### (及其後的空白)
+        .replace(/^\d+[.\s]\s*/, "") // 移除開頭的舊編號
+        .replace(/^\./, ""); // 移除舊的強制點號
 
-            content = content.trim();
+      content = content.trim();
 
-            const newLine = `### ${sceneNumStr}${content}`;
-            if (newLine !== line) {
-                editor.setLine(i, newLine);
-            }
-        }
+      const newLine = `### ${sceneNumStr}${content}`;
+      if (newLine !== line) {
+        editor.setLine(i, newLine);
+      }
     }
+  }
 }
 
-export function toggleLinePrefix(plugin: ScriptEditorPlugin, editor: Editor, prefix: string) {
-    const cursor = editor.getCursor();
-    const lineContent = editor.getLine(cursor.line);
-    let newLineContent = lineContent;
-    let hasMarker = false;
+export function toggleLinePrefix(
+  plugin: ScriptEditorPlugin,
+  editor: Editor,
+  prefix: string
+) {
+  const cursor = editor.getCursor();
+  const lineContent = editor.getLine(cursor.line);
+  let newLineContent = lineContent;
+  let hasMarker = false;
 
-    for (const marker of Object.values(SCRIPT_MARKERS)) {
-        if (lineContent.trim().startsWith(marker)) {
-            const matchIndex = lineContent.indexOf(marker);
-            const before = lineContent.substring(0, matchIndex);
-            const after = lineContent.substring(matchIndex + marker.length);
-            if (marker === prefix) {
-                newLineContent = before + after;
-                hasMarker = true;
-            } else {
-                newLineContent = before + prefix + after;
-                hasMarker = true;
-            }
-            break;
-        }
+  for (const marker of Object.values(SCRIPT_MARKERS)) {
+    if (lineContent.trim().startsWith(marker)) {
+      const matchIndex = lineContent.indexOf(marker);
+      const before = lineContent.substring(0, matchIndex);
+      const after = lineContent.substring(matchIndex + marker.length);
+      if (marker === prefix) {
+        newLineContent = before + after;
+        hasMarker = true;
+      } else {
+        newLineContent = before + prefix + after;
+        hasMarker = true;
+      }
+      break;
     }
-    if (!hasMarker) newLineContent = prefix + lineContent;
-    editor.setLine(cursor.line, newLineContent);
+  }
+  if (!hasMarker) newLineContent = prefix + lineContent;
+  editor.setLine(cursor.line, newLineContent);
 }
 
 export function insertText(editor: Editor, text: string, replaceLine = false) {
-    const cursor = editor.getCursor();
-    const lineContent = editor.getLine(cursor.line);
-    if (replaceLine) {
-        editor.setLine(cursor.line, text);
-    } else {
-        editor.setLine(cursor.line, text + lineContent);
-    }
+  const cursor = editor.getCursor();
+  const lineContent = editor.getLine(cursor.line);
+  if (replaceLine) {
+    editor.setLine(cursor.line, text);
+  } else {
+    editor.setLine(cursor.line, text + lineContent);
+  }
 }
 
-export async function exportFileToDocx(plugin: ScriptEditorPlugin, file: TFile) {
-    try {
-        const content = await plugin.app.vault.read(file);
-        const baseName = file.basename;
-        const folderPath = file.parent?.path || "/";
-        const fileName = `${baseName}.docx`;
-        const filePath = folderPath === "/" ? fileName : `${folderPath}/${fileName}`;
+export async function exportFileToDocx(
+  plugin: ScriptEditorPlugin,
+  file: TFile
+) {
+  try {
+    const content = await plugin.app.vault.read(file);
+    const baseName = file.basename;
+    const folderPath = file.parent?.path || "/";
+    const fileName = `${baseName}.docx`;
+    const filePath =
+      folderPath === "/" ? fileName : `${folderPath}/${fileName}`;
 
-        new Notice(`Exporting ${fileName}...`);
-        const buffer = await DocxExporter.exportToDocx(content, baseName);
+    new Notice(`Exporting ${fileName}...`);
+    const buffer = await DocxExporter.exportToDocx(content, baseName);
 
-        // Convert Buffer to ArrayBuffer for writeBinary
-        const arrayBuffer = (buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer);
+    // Convert Buffer to ArrayBuffer for writeBinary
+    const arrayBuffer = buffer.buffer.slice(
+      buffer.byteOffset,
+      buffer.byteOffset + buffer.byteLength
+    ) as ArrayBuffer;
 
-        // Save the file
-        await plugin.app.vault.adapter.writeBinary(filePath, arrayBuffer);
-        new Notice(`Successfully exported to ${baseName}.docx`);
-    } catch (error) {
-        console.error("Export to DOCX failed:", error);
-        new Notice(`Failed to export to DOCX: ${error.message}`);
-    }
+    // Save the file
+    await plugin.app.vault.adapter.writeBinary(filePath, arrayBuffer);
+    new Notice(`Successfully exported to ${baseName}.docx`);
+  } catch (error) {
+    console.error("Export to DOCX failed:", error);
+    new Notice(`Failed to export to DOCX: ${error.message}`);
+  }
 }
 
 export async function exportSummary(plugin: ScriptEditorPlugin, file: TFile) {
-    try {
-        const content = await plugin.app.vault.read(file);
-        const lines = content.split('\n');
-        const baseName = file.basename;
-        const folderPath = file.parent?.path || "/";
-        const summaryFileName = `${baseName} Summary.md`;
-        const summaryFilePath = folderPath === "/" ? summaryFileName : `${folderPath}/${summaryFileName}`;
+  try {
+    const content = await plugin.app.vault.read(file);
+    const lines = content.split("\n");
+    const baseName = file.basename;
+    const folderPath = file.parent?.path || "/";
+    const summaryFileName = `${baseName} Summary.md`;
+    const summaryFilePath =
+      folderPath === "/" ? summaryFileName : `${folderPath}/${summaryFileName}`;
 
-        let summaryLines: string[] = [];
-        let currentScene: string | null = null;
+    let summaryLines: string[] = [];
+    let currentScene: string | null = null;
 
-        lines.forEach((line) => {
-            const trimmed = line.trim();
+    lines.forEach((line) => {
+      const trimmed = line.trim();
 
-            // H1
-            if (trimmed.startsWith('# ')) {
-                summaryLines.push(trimmed);
-            }
-            // H2
-            else if (trimmed.startsWith('## ')) {
-                summaryLines.push('\n' + trimmed);
-            }
-            // Scene Heading
-            else if (SCENE_REGEX.test(trimmed)) {
-                // 提取編號：匹配可能存在的 ### 後的數字，或者開頭的數字
-                const match = trimmed.match(/^(?:###\s+)?(\d+[.\s])/);
-                if (match) {
-                    currentScene = match[1].trim(); // 得到 "01." 或 "1."
-                } else {
-                    currentScene = ""; // 沒找到編號則留空
-                }
-            }
-            // Summary Tag
-            else if (currentScene !== null && SUMMARY_REGEX.test(trimmed)) {
-                const summaryMatch = trimmed.match(SUMMARY_REGEX);
-                if (summaryMatch) {
-                    const sceneSummary = summaryMatch[1].trim();
-                    // 格式化：01. 總結內容
-                    const prefix = currentScene ? `${currentScene} ` : "";
-                    summaryLines.push(`${prefix}${sceneSummary}`);
-                    currentScene = null; // 重置，直到下一個場景
-                }
-            }
-        });
-        if (summaryLines.length === 0) {
-            new Notice("No scenes with summaries found in the script.");
-            return;
-        }
-
-        const finalContent = summaryLines.join('\n');
-
-        // Create or overwrite the summary file
-        const existingFile = plugin.app.vault.getAbstractFileByPath(summaryFilePath);
-        if (existingFile instanceof TFile) {
-            await plugin.app.vault.modify(existingFile, finalContent);
+      // H1
+      if (trimmed.startsWith("# ")) {
+        summaryLines.push(trimmed);
+      }
+      // H2
+      else if (trimmed.startsWith("## ")) {
+        summaryLines.push("\n" + trimmed);
+      }
+      // Scene Heading
+      else if (SCENE_REGEX.test(trimmed)) {
+        // 提取編號：匹配可能存在的 ### 後的數字，或者開頭的數字
+        const match = trimmed.match(/^(?:###\s+)?(\d+[.\s])/);
+        if (match) {
+          currentScene = match[1].trim(); // 得到 "01." 或 "1."
         } else {
-            await plugin.app.vault.create(summaryFilePath, finalContent);
+          currentScene = ""; // 沒找到編號則留空
         }
-
-        new Notice(`Successfully exported summary to ${summaryFileName}`);
-
-        // Open the created summary file
-        const newFile = plugin.app.vault.getAbstractFileByPath(summaryFilePath);
-        if (newFile instanceof TFile) {
-            const leaf = plugin.app.workspace.getLeaf(false);
-            await leaf.openFile(newFile);
+      }
+      // Summary Tag
+      else if (currentScene !== null && SUMMARY_REGEX.test(trimmed)) {
+        const summaryMatch = trimmed.match(SUMMARY_REGEX);
+        if (summaryMatch) {
+          const sceneSummary = summaryMatch[1].trim();
+          // 格式化：01. 總結內容
+          const prefix = currentScene ? `${currentScene} ` : "";
+          summaryLines.push(`${prefix}${sceneSummary}`);
+          currentScene = null; // 重置，直到下一個場景
         }
-
-    } catch (error) {
-        console.error("Export summary failed:", error);
-        new Notice(`Failed to export summary: ${error.message}`);
+      }
+    });
+    if (summaryLines.length === 0) {
+      new Notice("No scenes with summaries found in the script.");
+      return;
     }
+
+    const finalContent = summaryLines.join("\n");
+
+    // Create or overwrite the summary file
+    const existingFile =
+      plugin.app.vault.getAbstractFileByPath(summaryFilePath);
+    if (existingFile instanceof TFile) {
+      await plugin.app.vault.modify(existingFile, finalContent);
+    } else {
+      await plugin.app.vault.create(summaryFilePath, finalContent);
+    }
+
+    new Notice(`Successfully exported summary to ${summaryFileName}`);
+
+    // Open the created summary file
+    const newFile = plugin.app.vault.getAbstractFileByPath(summaryFilePath);
+    if (newFile instanceof TFile) {
+      const leaf = plugin.app.workspace.getLeaf(false);
+      await leaf.openFile(newFile);
+    }
+  } catch (error) {
+    console.error("Export summary failed:", error);
+    new Notice(`Failed to export summary: ${error.message}`);
+  }
 }
 
-export async function createNewScript(plugin: ScriptEditorPlugin, folderPath?: string) {
-    let targetFolder = folderPath;
-    if (!targetFolder) {
-        const activeFile = plugin.app.workspace.getActiveFile();
-        targetFolder = activeFile ? (activeFile.parent?.path || "/") : "/";
-    }
+export async function createNewScript(
+  plugin: ScriptEditorPlugin,
+  folderPath?: string
+) {
+  let targetFolder = folderPath;
+  if (!targetFolder) {
+    const activeFile = plugin.app.workspace.getActiveFile();
+    targetFolder = activeFile ? activeFile.parent?.path || "/" : "/";
+  }
 
-    const baseName = "Untitled Script";
-    let fileName = `${baseName}.md`;
-    let filePath = targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
+  const baseName = "Untitled Script";
+  let fileName = `${baseName}.md`;
+  let filePath =
+    targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
 
-    let counter = 1;
-    while (await plugin.app.vault.adapter.exists(filePath)) {
-        fileName = `${baseName} ${counter}.md`;
-        filePath = targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
-        counter++;
-    }
+  let counter = 1;
+  while (await plugin.app.vault.adapter.exists(filePath)) {
+    fileName = `${baseName} ${counter}.md`;
+    filePath = targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
+    counter++;
+  }
 
-    let fileContent = `---
+  let fileContent = `---
 cssclasses:
 - script
 ---
@@ -531,301 +641,356 @@ No... no. There's nothing wrong.
 Somerset still seems distant.
 `;
 
-    const templateFile = plugin.app.vault.getAbstractFileByPath('Script Templet.md');
-    if (templateFile instanceof TFile) {
-        fileContent = await plugin.app.vault.read(templateFile);
-    }
+  const templateFile =
+    plugin.app.vault.getAbstractFileByPath("Script Templet.md");
+  if (templateFile instanceof TFile) {
+    fileContent = await plugin.app.vault.read(templateFile);
+  }
 
-    const newFile = await plugin.app.vault.create(filePath, fileContent);
+  const newFile = await plugin.app.vault.create(filePath, fileContent);
 
-    const leaf = plugin.app.workspace.getLeaf(false);
-    await leaf.openFile(newFile);
+  const leaf = plugin.app.workspace.getLeaf(false);
+  await leaf.openFile(newFile);
 
-    // Optional: Trigger rename immediately for better UX
-    // @ts-ignore - internal API
-    plugin.app.workspace.trigger("rename", newFile, newFile.path);
+  // Optional: Trigger rename immediately for better UX
+  // @ts-ignore - internal API
+  plugin.app.workspace.trigger("rename", newFile, newFile.path);
 }
 
+export async function aiScriptDoctor(
+  plugin: ScriptEditorPlugin,
+  editor: Editor
+) {
+  const apiKey = plugin.settings.geminiApiKey;
+  if (!apiKey) {
+    new Notice("Please set your Gemini API Key in settings first.");
+    return;
+  }
 
-export async function aiScriptDoctor(plugin: ScriptEditorPlugin, editor: Editor) {
-    const apiKey = plugin.settings.geminiApiKey;
-    if (!apiKey) {
-        new Notice("Please set your Gemini API Key in settings first.");
-        return;
+  const content = editor.getValue();
+  const lines = content.split("\n");
+  const cursor = editor.getCursor();
+  const cursorLine = cursor.line;
+
+  // --- Block Parsing Logic ---
+  interface ScriptBlock {
+    type: "preamble" | "h2" | "scene";
+    title: string;
+    contentLines: string[];
+    originalStartLine: number;
+  }
+
+  const blocks: ScriptBlock[] = [];
+  let currentBlock: ScriptBlock = {
+    type: "preamble",
+    title: "",
+    contentLines: [],
+    originalStartLine: 0,
+  };
+  blocks.push(currentBlock);
+
+  lines.forEach((line: string, index: number) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("## ")) {
+      currentBlock = {
+        type: "h2",
+        title: trimmed.replace(/^##\s+/, ""),
+        contentLines: [line],
+        originalStartLine: index,
+      };
+      blocks.push(currentBlock);
+    } else if (SCENE_REGEX.test(trimmed)) {
+      currentBlock = {
+        type: "scene",
+        title: trimmed,
+        contentLines: [line],
+        originalStartLine: index,
+      };
+      blocks.push(currentBlock);
+    } else {
+      currentBlock.contentLines.push(line);
     }
+  });
 
-    const content = editor.getValue();
-    const lines = content.split('\n');
-    const cursor = editor.getCursor();
-    const cursorLine = cursor.line;
-
-    // --- Block Parsing Logic ---
-    interface ScriptBlock {
-        type: 'preamble' | 'h2' | 'scene';
-        title: string;
-        contentLines: string[];
-        originalStartLine: number;
+  // Find the block containing the cursor
+  let targetBlockIdx = -1;
+  for (let i = 0; i < blocks.length; i++) {
+    const start = blocks[i].originalStartLine;
+    const end =
+      i < blocks.length - 1
+        ? blocks[i + 1].originalStartLine - 1
+        : lines.length - 1;
+    if (cursorLine >= start && cursorLine <= end) {
+      targetBlockIdx = i;
+      break;
     }
+  }
 
-    const blocks: ScriptBlock[] = [];
-    let currentBlock: ScriptBlock = {
-        type: 'preamble',
-        title: '',
-        contentLines: [],
-        originalStartLine: 0
-    };
-    blocks.push(currentBlock);
+  if (targetBlockIdx === -1 || blocks[targetBlockIdx].type !== "scene") {
+    new Notice("Please place cursor inside a scene to use Script Doctor.");
+    return;
+  }
 
-    lines.forEach((line: string, index: number) => {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('## ')) {
-            currentBlock = {
-                type: 'h2',
-                title: trimmed.replace(/^##\s+/, ''),
-                contentLines: [line],
-                originalStartLine: index
-            };
-            blocks.push(currentBlock);
-        } else if (SCENE_REGEX.test(trimmed)) {
-            currentBlock = {
-                type: 'scene',
-                title: trimmed,
-                contentLines: [line],
-                originalStartLine: index
-            };
-            blocks.push(currentBlock);
-        } else {
-            currentBlock.contentLines.push(line);
-        }
-    });
+  const targetBlock = blocks[targetBlockIdx];
 
-    // Find the block containing the cursor
-    let targetBlockIdx = -1;
-    for (let i = 0; i < blocks.length; i++) {
-        const start = blocks[i].originalStartLine;
-        const end = (i < blocks.length - 1) ? blocks[i + 1].originalStartLine - 1 : lines.length - 1;
-        if (cursorLine >= start && cursorLine <= end) {
-            targetBlockIdx = i;
-            break;
-        }
+  // Extract Context (5 scenes before and after)
+  const before = blocks
+    .slice(Math.max(0, targetBlockIdx - 5), targetBlockIdx)
+    .map((b) => b.contentLines.join("\n"))
+    .join("\n---\n");
+  const after = blocks
+    .slice(targetBlockIdx + 1, Math.min(blocks.length, targetBlockIdx + 6))
+    .map((b) => b.contentLines.join("\n"))
+    .join("\n---\n");
+
+  new Notice("🤖 Consulting Script Doctor...");
+  const gemini = new GeminiService(apiKey);
+
+  const sceneBody = targetBlock.contentLines.join("\n").trim();
+  const response = await gemini.generateBrainstormQuestions(
+    sceneBody,
+    before,
+    after
+  );
+
+  if (response.error) {
+    new Notice(`AI Error: ${response.error}`);
+    return;
+  }
+
+  // Parse AI Response
+  const aiText = response.text.trim();
+  if (!aiText) {
+    new Notice("AI returned no questions.");
+    return;
+  }
+
+  // Reconstruct the block with questions appended as a note
+  const newContentLines = [...targetBlock.contentLines];
+
+  // Add a separator if the last line isn't empty
+  if (
+    newContentLines.length > 0 &&
+    newContentLines[newContentLines.length - 1].trim() !== ""
+  ) {
+    newContentLines.push("");
+  }
+
+  // Use the note format (%%note: %%) for side-bar display
+  const noteContent = aiText
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l !== "")
+    .join(" ");
+
+  newContentLines.push(`%%note: ${noteContent} %%`);
+
+  // Replace in editor
+  const startLine = targetBlock.originalStartLine;
+  const endLine =
+    targetBlockIdx < blocks.length - 1
+      ? blocks[targetBlockIdx + 1].originalStartLine - 1
+      : lines.length - 1;
+
+  editor.replaceRange(
+    newContentLines.join("\n") + "\n",
+    { line: startLine, ch: 0 },
+    { line: endLine, ch: lines[endLine].length }
+  );
+
+  new Notice("🧠 Script Doctor questions added!");
+}
+
+export async function aiSummaryAndRewrite(
+  plugin: ScriptEditorPlugin,
+  editor: Editor
+) {
+  const apiKey = plugin.settings.geminiApiKey;
+  if (!apiKey) {
+    new Notice("Please set your Gemini API Key in settings first.");
+    return;
+  }
+
+  const content = editor.getValue();
+  const lines = content.split("\n");
+  const cursor = editor.getCursor();
+  const cursorLine = cursor.line;
+
+  // --- Block Parsing Logic (identical to storyBoardView to maintain consistency) ---
+  interface ScriptBlock {
+    type: "preamble" | "h2" | "scene";
+    title: string;
+    contentLines: string[];
+    originalStartLine: number;
+  }
+
+  const blocks: ScriptBlock[] = [];
+  let currentBlock: ScriptBlock = {
+    type: "preamble",
+    title: "",
+    contentLines: [],
+    originalStartLine: 0,
+  };
+  blocks.push(currentBlock);
+
+  lines.forEach((line: string, index: number) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("## ")) {
+      currentBlock = {
+        type: "h2",
+        title: trimmed.replace(/^##\s+/, ""),
+        contentLines: [line],
+        originalStartLine: index,
+      };
+      blocks.push(currentBlock);
+    } else if (SCENE_REGEX.test(trimmed)) {
+      currentBlock = {
+        type: "scene",
+        title: trimmed,
+        contentLines: [line],
+        originalStartLine: index,
+      };
+      blocks.push(currentBlock);
+    } else {
+      currentBlock.contentLines.push(line);
     }
+  });
 
-    if (targetBlockIdx === -1 || blocks[targetBlockIdx].type !== 'scene') {
-        new Notice("Please place cursor inside a scene to use Script Doctor.");
-        return;
+  // Find the block containing the cursor
+  let targetBlockIdx = -1;
+  for (let i = 0; i < blocks.length; i++) {
+    const start = blocks[i].originalStartLine;
+    const end =
+      i < blocks.length - 1
+        ? blocks[i + 1].originalStartLine - 1
+        : lines.length - 1;
+    if (cursorLine >= start && cursorLine <= end) {
+      targetBlockIdx = i;
+      break;
     }
+  }
 
-    const targetBlock = blocks[targetBlockIdx];
+  if (targetBlockIdx === -1 || blocks[targetBlockIdx].type !== "scene") {
+    new Notice("Please place cursor inside a scene to rewrite.");
+    return;
+  }
 
-    // Extract Context (5 scenes before and after)
-    const before = blocks.slice(Math.max(0, targetBlockIdx - 5), targetBlockIdx)
-        .map(b => b.contentLines.join('\n')).join('\n---\n');
-    const after = blocks.slice(targetBlockIdx + 1, Math.min(blocks.length, targetBlockIdx + 6))
-        .map(b => b.contentLines.join('\n')).join('\n---\n');
+  const targetBlock = blocks[targetBlockIdx];
 
-    new Notice("🤖 Consulting Script Doctor...");
-    const gemini = new GeminiService(apiKey);
+  // Extract Context (5 scenes before and after)
+  const before = blocks
+    .slice(Math.max(0, targetBlockIdx - 5), targetBlockIdx)
+    .map((b) => b.contentLines.join("\n"))
+    .join("\n---\n");
+  const after = blocks
+    .slice(targetBlockIdx + 1, Math.min(blocks.length, targetBlockIdx + 6))
+    .map((b) => b.contentLines.join("\n"))
+    .join("\n---\n");
 
-    const sceneBody = targetBlock.contentLines.join('\n').trim();
-    const response = await gemini.generateBrainstormQuestions(sceneBody, before, after);
+  // Use the full block content (including heading) so AI knows the intended location/time
+  const sceneBody = targetBlock.contentLines
+    .slice(1)
+    .filter(
+      (l) =>
+        !SUMMARY_REGEX.test(l) && !COLOR_TAG_REGEX.test(l) && l.trim() !== ""
+    )
+    .join("\n")
+    .trim();
 
-    if (response.error) {
-        new Notice(`AI Error: ${response.error}`);
-        return;
-    }
+  const isSceneEmpty = sceneBody.length < 5; // Very short or empty
 
-    // Parse AI Response
-    const aiText = response.text.trim();
-    if (!aiText) {
-        new Notice("AI returned no questions.");
-        return;
-    }
+  const gemini = new GeminiService(apiKey);
+  let response;
+  if (isSceneEmpty) {
+    new Notice("🤖 Scene is empty. Consulting Script Doctor...");
+    response = await gemini.generateBrainstormQuestions(
+      targetBlock.contentLines[0],
+      before,
+      after
+    );
+  } else {
+    new Notice("🤖 AI is rewriting scene...");
+    response = await gemini.generateRewriteScene(
+      targetBlock.contentLines.join("\n").trim(),
+      before,
+      after
+    );
+  }
 
-    // Reconstruct the block with questions appended as a note
+  if (response.error) {
+    new Notice(`AI Error: ${response.error}`);
+    return;
+  }
+
+  const aiText = response.text;
+
+  if (isSceneEmpty) {
+    // Handle Brainstorm response (append questions to existing block)
     const newContentLines = [...targetBlock.contentLines];
-
-    // Add a separator if the last line isn't empty
-    if (newContentLines.length > 0 && newContentLines[newContentLines.length - 1].trim() !== "") {
-        newContentLines.push("");
+    if (
+      newContentLines.length > 0 &&
+      newContentLines[newContentLines.length - 1].trim() !== ""
+    ) {
+      newContentLines.push("");
     }
-
-    // Use the note format (%%note: %%) for side-bar display
-    const noteContent = aiText.split('\n')
-        .map(l => l.trim())
-        .filter(l => l !== "")
-        .join(' ');
+    const noteContent = aiText
+      .split("\n")
+      .map((l: string) => l.trim())
+      .filter((l: string) => l !== "")
+      .join(" ");
 
     newContentLines.push(`%%note: ${noteContent} %%`);
 
-    // Replace in editor
     const startLine = targetBlock.originalStartLine;
-    const endLine = (targetBlockIdx < blocks.length - 1) ? blocks[targetBlockIdx + 1].originalStartLine - 1 : lines.length - 1;
-
+    const endLine =
+      targetBlockIdx < blocks.length - 1
+        ? blocks[targetBlockIdx + 1].originalStartLine - 1
+        : lines.length - 1;
     editor.replaceRange(
-        newContentLines.join('\n') + '\n',
-        { line: startLine, ch: 0 },
-        { line: endLine, ch: lines[endLine].length }
+      newContentLines.join("\n") + "\n",
+      { line: startLine, ch: 0 },
+      { line: endLine, ch: lines[endLine].length }
     );
+    new Notice("🧠 Scene was empty. Script Doctor's questions added.");
+  } else {
+    // Handle Rewrite response (standard replacement)
+    const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
+    const contentParts = aiText.split(/CONTENT:\s*/i);
 
-    new Notice("🧠 Script Doctor questions added!");
-}
+    const newSummary = summaryMatch ? summaryMatch[1].trim() : "";
+    let newBody = contentParts.length > 1 ? contentParts[1].trim() : "";
 
-export async function aiSummaryAndRewrite(plugin: ScriptEditorPlugin, editor: Editor) {
-    const apiKey = plugin.settings.geminiApiKey;
-    if (!apiKey) {
-        new Notice("Please set your Gemini API Key in settings first.");
-        return;
+    // Safety: Strip any scene heading the AI might have accidentally included
+    const bodyLines = newBody.split("\n");
+    if (bodyLines.length > 0 && SCENE_REGEX.test(bodyLines[0].trim())) {
+      bodyLines.shift();
+      newBody = bodyLines.join("\n").trim();
     }
 
-    const content = editor.getValue();
-    const lines = content.split('\n');
-    const cursor = editor.getCursor();
-    const cursorLine = cursor.line;
-
-    // --- Block Parsing Logic (identical to storyBoardView to maintain consistency) ---
-    interface ScriptBlock {
-        type: 'preamble' | 'h2' | 'scene';
-        title: string;
-        contentLines: string[];
-        originalStartLine: number;
+    const newContentLines = [targetBlock.contentLines[0]]; // Keep original Title
+    if (newSummary) {
+      newContentLines.push(`%%summary: ${newSummary}%%`);
+    }
+    const colorLine = targetBlock.contentLines.find((l) =>
+      l.trim().match(COLOR_TAG_REGEX)
+    );
+    if (colorLine) {
+      newContentLines.push(colorLine.trim());
+    }
+    if (newBody) {
+      newContentLines.push(newBody);
     }
 
-    const blocks: ScriptBlock[] = [];
-    let currentBlock: ScriptBlock = {
-        type: 'preamble',
-        title: '',
-        contentLines: [],
-        originalStartLine: 0
-    };
-    blocks.push(currentBlock);
-
-    lines.forEach((line: string, index: number) => {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('## ')) {
-            currentBlock = {
-                type: 'h2',
-                title: trimmed.replace(/^##\s+/, ''),
-                contentLines: [line],
-                originalStartLine: index
-            };
-            blocks.push(currentBlock);
-        } else if (SCENE_REGEX.test(trimmed)) {
-            currentBlock = {
-                type: 'scene',
-                title: trimmed,
-                contentLines: [line],
-                originalStartLine: index
-            };
-            blocks.push(currentBlock);
-        } else {
-            currentBlock.contentLines.push(line);
-        }
-    });
-
-    // Find the block containing the cursor
-    let targetBlockIdx = -1;
-    for (let i = 0; i < blocks.length; i++) {
-        const start = blocks[i].originalStartLine;
-        const end = (i < blocks.length - 1) ? blocks[i + 1].originalStartLine - 1 : lines.length - 1;
-        if (cursorLine >= start && cursorLine <= end) {
-            targetBlockIdx = i;
-            break;
-        }
-    }
-
-    if (targetBlockIdx === -1 || blocks[targetBlockIdx].type !== 'scene') {
-        new Notice("Please place cursor inside a scene to rewrite.");
-        return;
-    }
-
-    const targetBlock = blocks[targetBlockIdx];
-
-    // Extract Context (5 scenes before and after)
-    const before = blocks.slice(Math.max(0, targetBlockIdx - 5), targetBlockIdx)
-        .map(b => b.contentLines.join('\n')).join('\n---\n');
-    const after = blocks.slice(targetBlockIdx + 1, Math.min(blocks.length, targetBlockIdx + 6))
-        .map(b => b.contentLines.join('\n')).join('\n---\n');
-
-    // Use the full block content (including heading) so AI knows the intended location/time
-    const sceneBody = targetBlock.contentLines.slice(1)
-        .filter(l => !SUMMARY_REGEX.test(l) && !COLOR_TAG_REGEX.test(l) && l.trim() !== "")
-        .join('\n').trim();
-
-    const isSceneEmpty = sceneBody.length < 5; // Very short or empty
-
-    const gemini = new GeminiService(apiKey);
-    let response;
-    if (isSceneEmpty) {
-        new Notice("🤖 Scene is empty. Consulting Script Doctor...");
-        response = await gemini.generateBrainstormQuestions(targetBlock.contentLines[0], before, after);
-    } else {
-        new Notice("🤖 AI is rewriting scene...");
-        response = await gemini.generateRewriteScene(targetBlock.contentLines.join('\n').trim(), before, after);
-    }
-
-    if (response.error) {
-        new Notice(`AI Error: ${response.error}`);
-        return;
-    }
-
-    const aiText = response.text;
-
-    if (isSceneEmpty) {
-        // Handle Brainstorm response (append questions to existing block)
-        const newContentLines = [...targetBlock.contentLines];
-        if (newContentLines.length > 0 && newContentLines[newContentLines.length - 1].trim() !== "") {
-            newContentLines.push("");
-        }
-        const noteContent = aiText.split('\n')
-            .map((l: string) => l.trim())
-            .filter((l: string) => l !== "")
-            .join(' ');
-
-        newContentLines.push(`%%note: ${noteContent} %%`);
-
-        const startLine = targetBlock.originalStartLine;
-        const endLine = (targetBlockIdx < blocks.length - 1) ? blocks[targetBlockIdx + 1].originalStartLine - 1 : lines.length - 1;
-        editor.replaceRange(
-            newContentLines.join('\n') + '\n',
-            { line: startLine, ch: 0 },
-            { line: endLine, ch: lines[endLine].length }
-        );
-        new Notice("🧠 Scene was empty. Script Doctor's questions added.");
-
-    } else {
-        // Handle Rewrite response (standard replacement)
-        const summaryMatch = aiText.match(/SUMMARY:\s*(.*)/i);
-        const contentParts = aiText.split(/CONTENT:\s*/i);
-
-        const newSummary = summaryMatch ? summaryMatch[1].trim() : "";
-        let newBody = contentParts.length > 1 ? contentParts[1].trim() : "";
-
-        // Safety: Strip any scene heading the AI might have accidentally included
-        const bodyLines = newBody.split('\n');
-        if (bodyLines.length > 0 && SCENE_REGEX.test(bodyLines[0].trim())) {
-            bodyLines.shift();
-            newBody = bodyLines.join('\n').trim();
-        }
-
-        const newContentLines = [targetBlock.contentLines[0]]; // Keep original Title
-        if (newSummary) {
-            newContentLines.push(`%%summary: ${newSummary}%%`);
-        }
-        const colorLine = targetBlock.contentLines.find(l => l.trim().match(COLOR_TAG_REGEX));
-        if (colorLine) {
-            newContentLines.push(colorLine.trim());
-        }
-        if (newBody) {
-            newContentLines.push(newBody);
-        }
-
-        const startLine = targetBlock.originalStartLine;
-        const endLine = (targetBlockIdx < blocks.length - 1) ? blocks[targetBlockIdx + 1].originalStartLine - 1 : lines.length - 1;
-        editor.replaceRange(
-            newContentLines.join('\n') + '\n',
-            { line: startLine, ch: 0 },
-            { line: endLine, ch: lines[endLine].length }
-        );
-        new Notice("✨ Scene rewritten!");
-    }
+    const startLine = targetBlock.originalStartLine;
+    const endLine =
+      targetBlockIdx < blocks.length - 1
+        ? blocks[targetBlockIdx + 1].originalStartLine - 1
+        : lines.length - 1;
+    editor.replaceRange(
+      newContentLines.join("\n") + "\n",
+      { line: startLine, ch: 0 },
+      { line: endLine, ch: lines[endLine].length }
+    );
+    new Notice("✨ Scene rewritten!");
+  }
 }
