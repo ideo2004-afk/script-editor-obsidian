@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting, setIcon } from "obsidian";
 import ScriptEditorPlugin from "./main";
 
 export interface ScriptEditorSettings {
@@ -30,15 +30,15 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("AI beat summary (Gemini 2.5 Flash)")
       .setDesc("Get your API key from Google AI Studio.")
-      .addText(
-        (text) =>
-          (text
-            .setPlaceholder("Enter your Gemini API key")
-            .setValue(this.plugin.settings.geminiApiKey)
-            .onChange(async (value) => {
-              this.plugin.settings.geminiApiKey = value.trim();
-              await this.plugin.saveSettings();
-            }).inputEl.style.width = "350px")
+      .addText((text) =>
+        text
+          .setPlaceholder("Enter your Gemini API key")
+          .setValue(this.plugin.settings.geminiApiKey)
+          .onChange(async (value) => {
+            this.plugin.settings.geminiApiKey = value.trim();
+            await this.plugin.saveSettings();
+          })
+          .inputEl.addClass("script-editor-api-key-input")
       );
 
     // Quick features
@@ -115,7 +115,7 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
       cls: "script-editor-sponsor-btn github-btn",
     });
     const githubIcon = githubLink.createDiv({ cls: "github-sponsor-icon" });
-    githubIcon.innerHTML = SPONSOR_ICON;
+    setIcon(githubIcon, "heart");
     githubLink.createSpan({ text: "GitHub Sponsor" });
   }
 }

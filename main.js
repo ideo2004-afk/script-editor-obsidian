@@ -19330,7 +19330,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     const summaryLength = 50;
     const blocks = [];
     let currentBlock = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       type: "preamble",
       title: "",
       contentLines: [],
@@ -19341,7 +19341,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
       const trimmed = line.trim();
       if (trimmed.startsWith("## ")) {
         currentBlock = {
-          id: Math.random().toString(36).substr(2, 9),
+          id: Math.random().toString(36).substring(2, 11),
           type: "h2",
           title: trimmed.replace(/^##\s+/, ""),
           contentLines: [line],
@@ -19350,7 +19350,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
         blocks.push(currentBlock);
       } else if (SCENE_REGEX.test(trimmed)) {
         currentBlock = {
-          id: Math.random().toString(36).substr(2, 9),
+          id: Math.random().toString(36).substring(2, 11),
           type: "scene",
           title: trimmed,
           contentLines: [line],
@@ -19427,8 +19427,10 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           });
           const rect = cardEl.getBoundingClientRect();
           const containerRect = container.getBoundingClientRect();
-          picker.style.top = `${rect.top - containerRect.top + 30}px`;
-          picker.style.left = `${rect.left - containerRect.left + 5}px`;
+          picker.setCssStyles({
+            top: `${rect.top - containerRect.top + 30}px`,
+            left: `${rect.left - containerRect.left + 5}px`
+          });
           const colors = ["none", "red", "blue", "green", "yellow", "purple"];
           colors.forEach((c) => {
             const opt = picker.createDiv({
@@ -19691,7 +19693,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
   // --- Insert New Scene ---
   async insertNewScene(blocks, afterIdx) {
     const newBlock = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       type: "scene",
       title: "EXT. ",
       contentLines: ["EXT. ", ""],
@@ -19708,7 +19710,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
   async duplicateScene(blocks, blockIdx) {
     const original = blocks[blockIdx];
     const duplicate = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       type: original.type,
       title: original.title,
       contentLines: [...original.contentLines],
@@ -19880,8 +19882,7 @@ function registerReadingView(plugin) {
         return !tl || COLOR_TAG_REGEX.test(tl) || SUMMARY_REGEX.test(tl) || NOTE_REGEX.test(tl) && tl.startsWith("%%");
       });
       if (isPureMetadataOrEmpty) {
-        node.style.display = "none";
-        node.style.margin = "0";
+        node.addClass("script-editor-hidden-metadata");
         node.dataset.scriptProcessed = "true";
         return;
       }
@@ -19911,7 +19912,7 @@ function registerReadingView(plugin) {
           displayText = trimmedLine.substring(format.markerLength).trim();
         }
         lineEl.setText(displayText);
-        lineEl.style.margin = "0";
+        lineEl.addClass("script-editor-line-element");
         previousType = currentType;
       });
     });
@@ -20043,7 +20044,6 @@ var DEFAULT_SETTINGS = {
   mySetting: "default",
   geminiApiKey: ""
 };
-var SPONSOR_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
 var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
@@ -20057,7 +20057,7 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
       (text) => text.setPlaceholder("Enter your Gemini API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
         this.plugin.settings.geminiApiKey = value.trim();
         await this.plugin.saveSettings();
-      }).inputEl.style.width = "350px"
+      }).inputEl.addClass("script-editor-api-key-input")
     );
     new import_obsidian4.Setting(containerEl).setName("Quick features").setDesc("Automation and creation tools.").setHeading();
     const featuresDiv = containerEl.createDiv();
@@ -20117,7 +20117,7 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
       cls: "script-editor-sponsor-btn github-btn"
     });
     const githubIcon = githubLink.createDiv({ cls: "github-sponsor-icon" });
-    githubIcon.innerHTML = SPONSOR_ICON;
+    (0, import_obsidian4.setIcon)(githubIcon, "heart");
     githubLink.createSpan({ text: "GitHub Sponsor" });
   }
 };
@@ -20344,7 +20344,7 @@ function registerMenus(plugin) {
         });
         btn.addClass("script-editor-storyboard-action");
       } else {
-        existingCardBtn.style.display = "";
+        existingCardBtn.removeClass("script-editor-hidden");
       }
       const state2 = view.leaf.getViewState().state;
       const isSource = state2.mode === "source" && state2.source === true;
@@ -20366,15 +20366,15 @@ function registerMenus(plugin) {
         });
         btn.addClass("script-editor-mode-toggle-action");
       } else {
-        existingToggleBtn.style.display = "";
+        existingToggleBtn.removeClass("script-editor-hidden");
         existingToggleBtn.setAttribute("aria-label", label);
         (0, import_obsidian5.setIcon)(existingToggleBtn, icon);
       }
     } else {
       if (existingCardBtn)
-        existingCardBtn.style.display = "none";
+        existingCardBtn.addClass("script-editor-hidden");
       if (existingToggleBtn)
-        existingToggleBtn.style.display = "none";
+        existingToggleBtn.addClass("script-editor-hidden");
     }
   };
   plugin.registerEvent(

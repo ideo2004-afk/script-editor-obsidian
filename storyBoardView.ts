@@ -19,6 +19,15 @@ import { GeminiService } from "./ai";
 
 export const STORYBOARD_VIEW_TYPE = "script-editor-storyboard-view";
 
+interface ScriptBlock {
+  id: string;
+  type: "preamble" | "h2" | "scene";
+  title: string;
+  summary?: string;
+  contentLines: string[];
+  originalLine: number;
+}
+
 export class StoryBoardView extends ItemView {
   file: TFile | null = null;
   collapsedSections: Set<string> = new Set();
@@ -44,7 +53,7 @@ export class StoryBoardView extends ItemView {
     await this.updateView();
   }
 
-  async onOpen() {
+  async onOpen(): Promise<void> {
     this.addAction("pencil", "Live view", async () => {
       if (this.file) {
         await this.leaf.setViewState({
@@ -104,18 +113,9 @@ export class StoryBoardView extends ItemView {
 
     const summaryLength = 50;
 
-    interface ScriptBlock {
-      id: string;
-      type: "preamble" | "h2" | "scene";
-      title: string;
-      summary?: string; // Add this
-      contentLines: string[];
-      originalLine: number;
-    }
-
     const blocks: ScriptBlock[] = [];
     let currentBlock: ScriptBlock = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       type: "preamble",
       title: "",
       contentLines: [],
@@ -127,7 +127,7 @@ export class StoryBoardView extends ItemView {
       const trimmed = line.trim();
       if (trimmed.startsWith("## ")) {
         currentBlock = {
-          id: Math.random().toString(36).substr(2, 9),
+          id: Math.random().toString(36).substring(2, 11),
           type: "h2",
           title: trimmed.replace(/^##\s+/, ""),
           contentLines: [line],
@@ -136,7 +136,7 @@ export class StoryBoardView extends ItemView {
         blocks.push(currentBlock);
       } else if (SCENE_REGEX.test(trimmed)) {
         currentBlock = {
-          id: Math.random().toString(36).substr(2, 9),
+          id: Math.random().toString(36).substring(2, 11),
           type: "scene",
           title: trimmed,
           contentLines: [line],
@@ -242,8 +242,10 @@ export class StoryBoardView extends ItemView {
           const containerRect = container.getBoundingClientRect();
 
           // Position the picker below the top-left corner
-          picker.style.top = `${rect.top - containerRect.top + 30}px`;
-          picker.style.left = `${rect.left - containerRect.left + 5}px`;
+          picker.setCssStyles({
+            top: `${rect.top - containerRect.top + 30}px`,
+            left: `${rect.left - containerRect.left + 5}px`,
+          });
 
           const colors = ["none", "red", "blue", "green", "yellow", "purple"];
           colors.forEach((c) => {
@@ -447,7 +449,11 @@ export class StoryBoardView extends ItemView {
       view.editor.scrollIntoView({ from: linePos, to: linePos }, true);
     }
   }
-  private async moveBlock(blocks: any[], fromIdx: number, toIdx: number) {
+  private async moveBlock(
+    blocks: ScriptBlock[],
+    fromIdx: number,
+    toIdx: number
+  ) {
     const movedBlock = blocks[fromIdx];
 
     // Use a more predictable approach for insertion
@@ -473,7 +479,7 @@ export class StoryBoardView extends ItemView {
     }
   }
   private async updateBlockColor(
-    blocks: any[],
+    blocks: ScriptBlock[],
     blockIdx: number,
     color: string
   ) {
@@ -502,7 +508,7 @@ export class StoryBoardView extends ItemView {
   }
 
   // --- Scene Edit Modal ---
-  private openEditModal(blocks: any[], blockIdx: number) {
+  private openEditModal(blocks: ScriptBlock[], blockIdx: number) {
     const block = blocks[blockIdx];
     const container = this.contentEl;
 
@@ -609,9 +615,9 @@ export class StoryBoardView extends ItemView {
   }
 
   // --- Insert New Scene ---
-  private async insertNewScene(blocks: any[], afterIdx: number) {
-    const newBlock = {
-      id: Math.random().toString(36).substr(2, 9),
+  private async insertNewScene(blocks: ScriptBlock[], afterIdx: number) {
+    const newBlock: ScriptBlock = {
+      id: Math.random().toString(36).substring(2, 11),
       type: "scene",
       title: "EXT. ",
       contentLines: ["EXT. ", ""],
@@ -628,10 +634,10 @@ export class StoryBoardView extends ItemView {
   }
 
   // --- Duplicate Scene ---
-  private async duplicateScene(blocks: any[], blockIdx: number) {
+  private async duplicateScene(blocks: ScriptBlock[], blockIdx: number) {
     const original = blocks[blockIdx];
-    const duplicate = {
-      id: Math.random().toString(36).substr(2, 9),
+    const duplicate: ScriptBlock = {
+      id: Math.random().toString(36).substring(2, 11),
       type: original.type,
       title: original.title,
       contentLines: [...original.contentLines],
@@ -648,7 +654,7 @@ export class StoryBoardView extends ItemView {
   }
 
   // --- Delete Scene with Confirmation ---
-  private confirmDeleteScene(blocks: any[], blockIdx: number) {
+  private confirmDeleteScene(blocks: ScriptBlock[], blockIdx: number) {
     const block = blocks[blockIdx];
     const container = this.contentEl;
 
@@ -690,7 +696,7 @@ export class StoryBoardView extends ItemView {
     });
   }
 
-  private async runAIBeat(blocks: any[], blockIdx: number) {
+  private async runAIBeat(blocks: ScriptBlock[], blockIdx: number) {
     const settings = (this.app as any).plugins.getPlugin(
       "script-editor"
     )?.settings;
@@ -742,7 +748,7 @@ export class StoryBoardView extends ItemView {
     }
   }
 
-  private async runBulkAIBeat(blocks: any[]) {
+  private async runBulkAIBeat(blocks: ScriptBlock[]) {
     const settings = (this.app as any).plugins.getPlugin(
       "script-editor"
     )?.settings;

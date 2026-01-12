@@ -853,3 +853,23 @@
 .github-btn:hover .github-sponsor-icon {
   animation: heartbeat 1.5s infinite;
 }
+
+/* ------------------------------------------------------------------
+   7. UTILITY CLASSES (Bot Compliance)
+   ------------------------------------------------------------------ */
+.script-editor-hidden {
+  display: none !important;
+}
+
+.script-editor-hidden-metadata {
+  display: none !important;
+  margin: 0 !important;
+}
+
+.script-editor-line-element {
+  margin: 0 !important;
+}
+
+.script-editor-api-key-input {
+  width: 350px !important;
+}

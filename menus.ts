@@ -324,7 +324,7 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
         });
         btn.addClass("script-editor-storyboard-action");
       } else {
-        existingCardBtn.style.display = "";
+        existingCardBtn.removeClass("script-editor-hidden");
       }
 
       // Mode Toggle Button (Reflect current state)
@@ -353,13 +353,13 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
         });
         btn.addClass("script-editor-mode-toggle-action");
       } else {
-        existingToggleBtn.style.display = "";
+        existingToggleBtn.removeClass("script-editor-hidden");
         existingToggleBtn.setAttribute("aria-label", label);
         setIcon(existingToggleBtn, icon);
       }
     } else {
-      if (existingCardBtn) existingCardBtn.style.display = "none";
-      if (existingToggleBtn) existingToggleBtn.style.display = "none";
+      if (existingCardBtn) existingCardBtn.addClass("script-editor-hidden");
+      if (existingToggleBtn) existingToggleBtn.addClass("script-editor-hidden");
     }
   };
 
