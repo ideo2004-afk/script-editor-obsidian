@@ -5,7 +5,6 @@ import {
   MarkdownView,
   TFile,
   TFolder,
-  WorkspaceLeaf,
   Notice,
   setIcon,
 } from "obsidian";
@@ -504,7 +503,7 @@ export async function exportSummary(plugin: ScriptEditorPlugin, file: TFile) {
     const summaryFilePath =
       folderPath === "/" ? summaryFileName : `${folderPath}/${summaryFileName}`;
 
-    let summaryLines: string[] = [];
+    const summaryLines: string[] = [];
     let currentScene: string | null = null;
 
     lines.forEach((line) => {
@@ -657,7 +656,6 @@ Somerset still seems distant.
   await leaf.openFile(newFile);
 
   // Optional: Trigger rename immediately for better UX
-  // @ts-ignore - internal API
   plugin.app.workspace.trigger("rename", newFile, newFile.path);
 }
 

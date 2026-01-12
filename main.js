@@ -24,7 +24,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // main.ts
 var main_exports = {};
 __export(main_exports, {
-  CHARACTER_CAPS_REGEX: () => CHARACTER_CAPS_REGEX2,
+  CHARACTER_CAPS_REGEX: () => CHARACTER_CAPS_REGEX,
   CHARACTER_COLON_REGEX: () => CHARACTER_COLON_REGEX,
   COLOR_TAG_REGEX: () => COLOR_TAG_REGEX,
   CSS_CLASSES: () => CSS_CLASSES,
@@ -19007,7 +19007,7 @@ var UTF16BE = new Uint8Array([254, 255]);
 
 // docxExporter.ts
 var DocxExporter = class {
-  static async exportToDocx(text, title) {
+  static async exportToDocx(text, _title) {
     let content = text;
     if (content.trimStart().startsWith("---")) {
       const firstIndex = content.indexOf("---");
@@ -19019,7 +19019,7 @@ var DocxExporter = class {
     const lines = content.split("\n");
     const paragraphs = [];
     let previousType = "ACTION";
-    for (let lineText of lines) {
+    for (const lineText of lines) {
       const trimmed = lineText.trim();
       if (!trimmed || COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed) || NOTE_REGEX.test(trimmed)) {
         if (!trimmed)
@@ -19028,33 +19028,54 @@ var DocxExporter = class {
         continue;
       }
       if (trimmed.startsWith("# ")) {
-        paragraphs.push(new Paragraph({
-          children: [new TextRun({
-            text: trimmed.substring(2).trim().toUpperCase(),
-            font: "Courier New",
-            size: 24
-          })],
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 480, after: 240 }
-        }));
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: trimmed.substring(2).trim().toUpperCase(),
+                font: "Courier New",
+                size: 24
+              })
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 480, after: 240 }
+          })
+        );
         previousType = "ACTION";
         continue;
       }
       if (SCENE_REGEX.test(trimmed)) {
-        let displayText = trimmed.replace(/^###\s*/, "").replace(/^\./, "").trim();
-        paragraphs.push(new Paragraph({
-          children: [new TextRun({ text: displayText.toUpperCase(), bold: true, font: "Courier New", size: 24 })],
-          spacing: { before: 240, after: 120 }
-        }));
+        const displayText = trimmed.replace(/^###\s*/, "").replace(/^\./, "").trim();
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: displayText.toUpperCase(),
+                bold: true,
+                font: "Courier New",
+                size: 24
+              })
+            ],
+            spacing: { before: 240, after: 120 }
+          })
+        );
         previousType = "SCENE";
         continue;
       }
       if (TRANSITION_REGEX.test(trimmed)) {
-        paragraphs.push(new Paragraph({
-          children: [new TextRun({ text: trimmed.toUpperCase(), font: "Courier New", size: 24 })],
-          alignment: AlignmentType.RIGHT,
-          spacing: { before: 240, after: 120 }
-        }));
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: trimmed.toUpperCase(),
+                font: "Courier New",
+                size: 24
+              })
+            ],
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 240, after: 120 }
+          })
+        );
         previousType = "TRANSITION";
         continue;
       }
@@ -19067,17 +19088,33 @@ var DocxExporter = class {
           charName = colonMatch[1].trim() + colonMatch[2];
           dialogueAfterColon = "";
         }
-        paragraphs.push(new Paragraph({
-          children: [new TextRun({ text: charName.toUpperCase(), font: "Courier New", size: 24 })],
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 240 }
-        }));
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: charName.toUpperCase(),
+                font: "Courier New",
+                size: 24
+              })
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 240 }
+          })
+        );
         if (dialogueAfterColon) {
-          paragraphs.push(new Paragraph({
-            children: [new TextRun({ text: dialogueAfterColon, font: "Courier New", size: 24 })],
-            indent: { left: 1440, right: 1440 }
-            // ~1.0 inch
-          }));
+          paragraphs.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: dialogueAfterColon,
+                  font: "Courier New",
+                  size: 24
+                })
+              ],
+              indent: { left: 1440, right: 1440 }
+              // ~1.0 inch
+            })
+          );
           previousType = "DIALOGUE";
         } else {
           previousType = "CHARACTER";
@@ -19085,44 +19122,63 @@ var DocxExporter = class {
         continue;
       }
       if (PARENTHETICAL_REGEX.test(trimmed) || OS_DIALOGUE_REGEX.test(trimmed)) {
-        paragraphs.push(new Paragraph({
-          children: [new TextRun({ text: trimmed, italics: true, font: "Courier New", size: 24 })],
-          indent: { left: 2160 }
-          // ~1.5 inches
-        }));
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: trimmed,
+                italics: true,
+                font: "Courier New",
+                size: 24
+              })
+            ],
+            indent: { left: 2160 }
+            // ~1.5 inches
+          })
+        );
         previousType = "PARENTHETICAL";
         continue;
       }
       if (previousType === "CHARACTER" || previousType === "PARENTHETICAL" || previousType === "DIALOGUE") {
-        paragraphs.push(new Paragraph({
-          children: [new TextRun({ text: trimmed, font: "Courier New", size: 24 })],
-          indent: { left: 1440, right: 1440 }
-          // ~1.0 inch
-        }));
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: trimmed, font: "Courier New", size: 24 })
+            ],
+            indent: { left: 1440, right: 1440 }
+            // ~1.0 inch
+          })
+        );
         previousType = "DIALOGUE";
         continue;
       }
-      paragraphs.push(new Paragraph({
-        children: [new TextRun({ text: trimmed, font: "Courier New", size: 24 })],
-        spacing: { before: 120, after: 120 }
-      }));
+      paragraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: trimmed, font: "Courier New", size: 24 })
+          ],
+          spacing: { before: 120, after: 120 }
+        })
+      );
       previousType = "ACTION";
     }
     const doc = new File({
-      sections: [{
-        properties: {
-          page: {
-            margin: {
-              top: 1440,
-              right: 1440,
-              bottom: 1440,
-              left: 2160
-              // 1.5 inches for punch hole
+      sections: [
+        {
+          properties: {
+            page: {
+              margin: {
+                top: 1440,
+                right: 1440,
+                bottom: 1440,
+                left: 2160
+                // 1.5 inches for punch hole
+              }
             }
-          }
-        },
-        children: paragraphs
-      }]
+          },
+          children: paragraphs
+        }
+      ]
     });
     return await Packer.toBuffer(doc);
   }
@@ -19616,7 +19672,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     const container = this.contentEl;
     let existingSummary = "";
     let existingColorLine = "";
-    let otherLines = [];
+    const otherLines = [];
     const title = block.contentLines[0] || "";
     for (let i = 1; i < block.contentLines.length; i++) {
       const line = block.contentLines[i];
@@ -19925,118 +19981,141 @@ var import_state = require("@codemirror/state");
 var import_view = require("@codemirror/view");
 var import_obsidian3 = require("obsidian");
 function livePreviewExtension(plugin) {
-  return import_view.ViewPlugin.fromClass(class {
-    constructor(view) {
-      this.decorations = this.buildDecorations(view);
-    }
-    update(update) {
-      if (update.docChanged || update.viewportChanged || update.selectionSet) {
-        this.decorations = this.buildDecorations(update.view);
+  return import_view.ViewPlugin.fromClass(
+    class {
+      constructor(view) {
+        this.decorations = this.buildDecorations(view);
       }
-    }
-    buildDecorations(view) {
-      const builder = new import_state.RangeSetBuilder();
-      const isScript = view.dom.closest(".fountain") || view.dom.closest(".script");
-      if (!isScript)
-        return builder.finish();
-      const isLivePreview = view.state.field(import_obsidian3.editorLivePreviewField);
-      if (!isLivePreview)
-        return builder.finish();
-      const selection = view.state.selection;
-      let previousType = null;
-      const hiddenDeco = import_view.Decoration.mark({ class: LP_CLASSES.SYMBOL });
-      for (const { from, to } of view.visibleRanges) {
-        for (let pos = from; pos <= to; ) {
-          const line = view.state.doc.lineAt(pos);
-          const text = line.text;
-          const trimmed = text.trim();
-          let lpClass = null;
-          let currentType = "ACTION";
-          let shouldHideMarker = false;
-          let isCursorOnLine = false;
-          for (const range2 of selection.ranges) {
-            if (range2.head >= line.from && range2.head <= line.to) {
-              isCursorOnLine = true;
-              break;
-            }
-          }
-          const lineDecos = [];
-          if (!trimmed) {
-            currentType = "EMPTY";
-          } else if (NOTE_REGEX.test(trimmed)) {
-            lpClass = LP_CLASSES.NOTE;
-            currentType = "EMPTY";
-            const prefixMatch = text.match(/^\s*%%note:\s*/i);
-            if (prefixMatch) {
-              const prefixLen = prefixMatch[0].length;
-              const contentStart = line.from + prefixLen;
-              const contentEnd = line.to - 2;
-              if (contentStart < contentEnd) {
-                lineDecos.push({ from: contentStart, to: contentEnd, deco: import_view.Decoration.mark({ class: "lp-note-content" }) });
-              }
-              lineDecos.push({ from: line.from, to: contentStart, deco: hiddenDeco });
-              lineDecos.push({ from: contentEnd, to: line.to, deco: hiddenDeco });
-            }
-          } else if (COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
-            if (!isCursorOnLine) {
-              lpClass = LP_CLASSES.SYMBOL;
-              shouldHideMarker = true;
-            }
-            currentType = "EMPTY";
-          } else if (SCENE_REGEX.test(text)) {
-            lpClass = LP_CLASSES.SCENE;
-            currentType = "SCENE";
-            if (!isCursorOnLine && (text.startsWith(".") || text.startsWith("###"))) {
-              shouldHideMarker = true;
-            }
-          } else if (TRANSITION_REGEX.test(text)) {
-            lpClass = LP_CLASSES.TRANSITION;
-            currentType = "TRANSITION";
-          } else if (OS_DIALOGUE_REGEX.test(text)) {
-            lpClass = LP_CLASSES.PARENTHETICAL;
-            currentType = "PARENTHETICAL";
-          } else if (PARENTHETICAL_REGEX.test(text)) {
-            lpClass = LP_CLASSES.PARENTHETICAL;
-            currentType = "PARENTHETICAL";
-          } else {
-            const format = plugin.detectExplicitFormat(trimmed);
-            if (format && format.typeKey === "CHARACTER") {
-              lpClass = LP_CLASSES.CHARACTER;
-              currentType = "CHARACTER";
-              if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
-                shouldHideMarker = true;
-              }
-            } else if (previousType === "CHARACTER" || previousType === "PARENTHETICAL" || previousType === "DIALOGUE") {
-              lpClass = LP_CLASSES.DIALOGUE;
-              currentType = "DIALOGUE";
-            } else {
-              currentType = "ACTION";
-            }
-          }
-          if (lpClass) {
-            builder.add(line.from, line.from, import_view.Decoration.line({
-              attributes: { class: lpClass }
-            }));
-          }
-          if (shouldHideMarker) {
-            const format = plugin.detectExplicitFormat(text);
-            const markerLen = (format == null ? void 0 : format.markerLength) || 1;
-            lineDecos.push({ from: line.from, to: line.from + markerLen, deco: hiddenDeco });
-          }
-          lineDecos.sort((a, b) => a.from - b.from).forEach((d) => {
-            if (d.from < d.to) {
-              builder.add(d.from, d.to, d.deco);
-            }
-          });
-          previousType = currentType;
-          pos = line.to + 1;
+      update(update) {
+        if (update.docChanged || update.viewportChanged || update.selectionSet) {
+          this.decorations = this.buildDecorations(update.view);
         }
       }
-      return builder.finish();
+      buildDecorations(view) {
+        const builder = new import_state.RangeSetBuilder();
+        const isScript = view.dom.closest(".fountain") || view.dom.closest(".script");
+        if (!isScript)
+          return builder.finish();
+        const isLivePreview = view.state.field(import_obsidian3.editorLivePreviewField);
+        if (!isLivePreview)
+          return builder.finish();
+        const selection = view.state.selection;
+        let previousType = null;
+        const hiddenDeco = import_view.Decoration.mark({ class: LP_CLASSES.SYMBOL });
+        for (const { from, to } of view.visibleRanges) {
+          for (let pos = from; pos <= to; ) {
+            const line = view.state.doc.lineAt(pos);
+            const text = line.text;
+            const trimmed = text.trim();
+            let lpClass = null;
+            let currentType = "ACTION";
+            let shouldHideMarker = false;
+            let isCursorOnLine = false;
+            for (const range2 of selection.ranges) {
+              if (range2.head >= line.from && range2.head <= line.to) {
+                isCursorOnLine = true;
+                break;
+              }
+            }
+            const lineDecos = [];
+            if (!trimmed) {
+              currentType = "EMPTY";
+            } else if (NOTE_REGEX.test(trimmed)) {
+              lpClass = LP_CLASSES.NOTE;
+              currentType = "EMPTY";
+              const prefixMatch = text.match(/^\s*%%note:\s*/i);
+              if (prefixMatch) {
+                const prefixLen = prefixMatch[0].length;
+                const contentStart = line.from + prefixLen;
+                const contentEnd = line.to - 2;
+                if (contentStart < contentEnd) {
+                  lineDecos.push({
+                    from: contentStart,
+                    to: contentEnd,
+                    deco: import_view.Decoration.mark({ class: "lp-note-content" })
+                  });
+                }
+                lineDecos.push({
+                  from: line.from,
+                  to: contentStart,
+                  deco: hiddenDeco
+                });
+                lineDecos.push({
+                  from: contentEnd,
+                  to: line.to,
+                  deco: hiddenDeco
+                });
+              }
+            } else if (COLOR_TAG_REGEX.test(trimmed) || SUMMARY_REGEX.test(trimmed)) {
+              if (!isCursorOnLine) {
+                lpClass = LP_CLASSES.SYMBOL;
+                shouldHideMarker = true;
+              }
+              currentType = "EMPTY";
+            } else if (SCENE_REGEX.test(text)) {
+              lpClass = LP_CLASSES.SCENE;
+              currentType = "SCENE";
+              if (!isCursorOnLine && (text.startsWith(".") || text.startsWith("###"))) {
+                shouldHideMarker = true;
+              }
+            } else if (TRANSITION_REGEX.test(text)) {
+              lpClass = LP_CLASSES.TRANSITION;
+              currentType = "TRANSITION";
+            } else if (OS_DIALOGUE_REGEX.test(text)) {
+              lpClass = LP_CLASSES.PARENTHETICAL;
+              currentType = "PARENTHETICAL";
+            } else if (PARENTHETICAL_REGEX.test(text)) {
+              lpClass = LP_CLASSES.PARENTHETICAL;
+              currentType = "PARENTHETICAL";
+            } else {
+              const format = plugin.detectExplicitFormat(trimmed);
+              if (format && format.typeKey === "CHARACTER") {
+                lpClass = LP_CLASSES.CHARACTER;
+                currentType = "CHARACTER";
+                if (!isCursorOnLine && text.startsWith(SCRIPT_MARKERS.CHARACTER)) {
+                  shouldHideMarker = true;
+                }
+              } else if (previousType === "CHARACTER" || previousType === "PARENTHETICAL" || previousType === "DIALOGUE") {
+                lpClass = LP_CLASSES.DIALOGUE;
+                currentType = "DIALOGUE";
+              } else {
+                currentType = "ACTION";
+              }
+            }
+            if (lpClass) {
+              builder.add(
+                line.from,
+                line.from,
+                import_view.Decoration.line({
+                  attributes: { class: lpClass }
+                })
+              );
+            }
+            if (shouldHideMarker) {
+              const format = plugin.detectExplicitFormat(text);
+              const markerLen = (format == null ? void 0 : format.markerLength) || 1;
+              lineDecos.push({
+                from: line.from,
+                to: line.from + markerLen,
+                deco: hiddenDeco
+              });
+            }
+            lineDecos.sort((a, b) => a.from - b.from).forEach((d) => {
+              if (d.from < d.to) {
+                builder.add(d.from, d.to, d.deco);
+              }
+            });
+            previousType = currentType;
+            pos = line.to + 1;
+          }
+        }
+        return builder.finish();
+      }
+    },
+    {
+      decorations: (v) => v.decorations
     }
-  }, {
-    decorations: (v) => v.decorations
-  });
+  );
 }
 
 // settings.ts
@@ -20477,7 +20556,7 @@ async function exportSummary(plugin, file) {
     const folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
     const summaryFileName = `${baseName} Summary.md`;
     const summaryFilePath = folderPath === "/" ? summaryFileName : `${folderPath}/${summaryFileName}`;
-    let summaryLines = [];
+    const summaryLines = [];
     let currentScene = null;
     lines.forEach((line) => {
       const trimmed = line.trim();
@@ -20868,7 +20947,7 @@ var CharacterSuggest = class extends import_obsidian6.EditorSuggest {
   renderSuggestion(suggestion, el) {
     el.createEl("div", { text: suggestion });
   }
-  selectSuggestion(suggestion, event) {
+  selectSuggestion(suggestion, _event) {
     const { context } = this;
     if (context) {
       context.editor.replaceRange(`@${suggestion}`, context.start, context.end);
@@ -20886,7 +20965,7 @@ var TRANSITION_REGEX = /^\s*((?:FADE (?:IN|OUT)|[A-Z\s]+ TO)(?:[:.]?))$/;
 var PARENTHETICAL_REGEX = /^\s*([(（]).+([)）])\s*$/i;
 var OS_DIALOGUE_REGEX = /^\s*(OS|VO|ＯＳ|ＶＯ)[:：]\s*/i;
 var CHARACTER_COLON_REGEX = /^\s*([\u4e00-\u9fa5A-Z0-9\s-]{1,30}(?:\s*[(（].*?[)）])?)([:：])\s*$/;
-var CHARACTER_CAPS_REGEX2 = /^\s*(?=.*[A-Z])[A-Z0-9\s-]{1,30}(?:\s*[(（].*?[)）])?$/;
+var CHARACTER_CAPS_REGEX = /^\s*(?=.*[A-Z])[A-Z0-9\s-]{1,30}(?:\s*[(（].*?[)）])?$/;
 var COLOR_TAG_REGEX = /^\s*%%color:\s*(red|blue|green|yellow|purple|none|无|無)\s*%%$/i;
 var SUMMARY_REGEX = /^\s*%%summary:\s*(.*?)\s*%%$/i;
 var NOTE_REGEX = /^\s*%%note:\s*(.*)%%$/i;
@@ -21044,7 +21123,7 @@ var ScriptEditorPlugin4 = class extends import_obsidian7.Plugin {
         typeKey: "CHARACTER"
       };
     const hasColon = CHARACTER_COLON_REGEX.test(text);
-    const isAllCapsEng = CHARACTER_CAPS_REGEX2.test(text);
+    const isAllCapsEng = CHARACTER_CAPS_REGEX.test(text);
     if (hasColon || isAllCapsEng) {
       return {
         cssClass: CSS_CLASSES.CHARACTER,

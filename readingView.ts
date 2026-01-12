@@ -1,4 +1,3 @@
-import { MarkdownPostProcessorContext } from "obsidian";
 import ScriptEditorPlugin, {
   CSS_CLASSES,
   COLOR_TAG_REGEX,

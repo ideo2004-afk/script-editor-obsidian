@@ -1,6 +1,6 @@
 {
   "name": "script-editor",
-  "version": "1.9.7",
+  "version": "1.9.8",
   "description": "Standard Fountain-compatible screenplay editor with CJK support.",
   "main": "main.js",
   "scripts": {
@@ -11,14 +11,21 @@
   "author": "ideo2004",
   "license": "MIT",
   "devDependencies": {
+    "@codemirror/state": "^6.5.3",
+    "@codemirror/view": "^6.39.9",
+    "@eslint/json": "^0.14.0",
     "@types/node": "^16.11.6",
     "@typescript-eslint/eslint-plugin": "5.29.0",
     "@typescript-eslint/parser": "5.29.0",
+    "@typescript-eslint/utils": "^8.52.0",
     "builtin-modules": "3.3.0",
     "esbuild": "0.17.3",
+    "eslint": "^8.57.1",
+    "eslint-plugin-obsidianmd": "^0.1.9",
     "obsidian": "^1.7.2",
     "tslib": "2.4.0",
-    "typescript": "4.7.4"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.52.0"
   },
   "dependencies": {
     "docx": "^9.5.1"

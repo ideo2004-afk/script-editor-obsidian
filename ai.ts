@@ -1,4 +1,4 @@
-import { requestUrl, Notice } from "obsidian";
+import { requestUrl } from "obsidian";
 
 export interface GeminiResponse {
   text: string;

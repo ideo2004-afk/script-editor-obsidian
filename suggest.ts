@@ -7,11 +7,7 @@ import {
   EditorSuggestTriggerInfo,
   TFile,
 } from "obsidian";
-import ScriptEditorPlugin, {
-  SCRIPT_MARKERS,
-  CHARACTER_COLON_REGEX,
-  CHARACTER_CAPS_REGEX,
-} from "./main";
+import ScriptEditorPlugin from "./main";
 
 /**
  * Standalone helper to extract character names and frequencies from text.
@@ -90,7 +86,7 @@ export class CharacterSuggest extends EditorSuggest<string> {
 
   selectSuggestion(
     suggestion: string,
-    event: MouseEvent | KeyboardEvent
+    _event: MouseEvent | KeyboardEvent
   ): void {
     const { context } = this;
     if (context) {

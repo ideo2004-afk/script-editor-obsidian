@@ -1,22 +1,4 @@
-import {
-  Plugin,
-  MarkdownView,
-  Editor,
-  Menu,
-  App,
-  PluginSettingTab,
-  Setting,
-  MenuItem,
-  TFile,
-  TFolder,
-  Notice,
-  WorkspaceLeaf,
-  editorLivePreviewField,
-  EditorSuggest,
-  EditorPosition,
-  EditorSuggestTriggerInfo,
-  EditorSuggestContext,
-} from "obsidian";
+import { Plugin, Editor, TFile, WorkspaceLeaf } from "obsidian";
 import { DocxExporter } from "./docxExporter";
 import { StoryBoardView, STORYBOARD_VIEW_TYPE } from "./storyBoardView";
 import { registerReadingView } from "./readingView";
@@ -26,7 +8,7 @@ import {
   DEFAULT_SETTINGS,
   ScriptEditorSettingTab,
 } from "./settings";
-import { registerMenus, ExtendedMenuItem } from "./menus";
+import { registerMenus } from "./menus";
 import { CharacterSuggest } from "./suggest";
 
 // Script Symbols

@@ -5,16 +5,9 @@ import {
   MarkdownView,
   Menu,
   setIcon,
-  requestUrl,
   Notice,
-  setTooltip,
 } from "obsidian";
-import {
-  SCENE_REGEX,
-  COLOR_TAG_REGEX,
-  SUMMARY_REGEX,
-  NOTE_REGEX,
-} from "./main";
+import { SCENE_REGEX, COLOR_TAG_REGEX, SUMMARY_REGEX } from "./main";
 import { GeminiService } from "./ai";
 
 export const STORYBOARD_VIEW_TYPE = "script-editor-storyboard-view";
@@ -516,7 +509,7 @@ export class StoryBoardView extends ItemView {
     // Extract existing summary vs color vs lines
     let existingSummary = "";
     let existingColorLine = "";
-    let otherLines: string[] = [];
+    const otherLines: string[] = [];
     // First line is always title
     const title = block.contentLines[0] || "";
 
