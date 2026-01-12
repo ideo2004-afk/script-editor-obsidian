@@ -19140,7 +19140,7 @@ var GeminiService = class {
   async callGemini(prompt) {
     var _a, _b, _c, _d, _e;
     if (!this.apiKey) {
-      return { text: "", error: "API Key not set" };
+      return { text: "", error: "API key not set" };
     }
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
@@ -19155,7 +19155,7 @@ var GeminiService = class {
       const data = response.json;
       const text = ((_e = (_d = (_c = (_b = (_a = data.candidates) == null ? void 0 : _a[0]) == null ? void 0 : _b.content) == null ? void 0 : _c.parts) == null ? void 0 : _d[0]) == null ? void 0 : _e.text) || "";
       if (!text) {
-        return { text: "", error: "Empty response from AI" };
+        return { text: "", error: "empty response from AI" };
       }
       return { text };
     } catch (error) {
@@ -20526,7 +20526,7 @@ async function createNewScript(plugin, folderPath) {
     const activeFile = plugin.app.workspace.getActiveFile();
     targetFolder = activeFile ? ((_a = activeFile.parent) == null ? void 0 : _a.path) || "/" : "/";
   }
-  const baseName = "Untitled Script";
+  const baseName = "Untitled script";
   let fileName = `${baseName}.md`;
   let filePath = targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
   let counter = 1;

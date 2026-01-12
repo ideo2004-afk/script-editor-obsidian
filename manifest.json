@@ -1,7 +1,7 @@
 {
   "id": "script-editor",
   "name": "Script Editor",
-  "version": "1.9.4",
+  "version": "1.9.5",
   "minAppVersion": "1.0.0",
   "description": "Standard Fountain-compatible screenplay editor with CJK support.",
   "author": "ideo2004",

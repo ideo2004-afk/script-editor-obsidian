@@ -1,53 +1,52 @@
-import { requestUrl, Notice } from 'obsidian';
+import { requestUrl, Notice } from "obsidian";
 
 export interface GeminiResponse {
-    text: string;
-    error?: string;
+  text: string;
+  error?: string;
 }
 
 export class GeminiService {
-    private apiKey: string;
+  private apiKey: string;
 
-    constructor(apiKey: string) {
-        this.apiKey = apiKey;
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async callGemini(prompt: string): Promise<GeminiResponse> {
+    if (!this.apiKey) {
+      return { text: "", error: "API key not set" };
     }
 
-    async callGemini(prompt: string): Promise<GeminiResponse> {
-        if (!this.apiKey) {
-            return { text: "", error: "API Key not set" };
-        }
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
+      const response = await requestUrl({
+        url: url,
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      });
 
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.apiKey}`;
-            const response = await requestUrl({
-                url: url,
-                method: 'POST',
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
+      const data = response.json;
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-            const data = response.json;
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if (!text) {
+        return { text: "", error: "empty response from AI" };
+      }
 
-            if (!text) {
-                return { text: "", error: "Empty response from AI" };
-            }
-
-            return { text };
-        } catch (error) {
-            console.error("Gemini AI Error:", error);
-            return { text: "", error: error.message || "Request failed" };
-        }
+      return { text };
+    } catch (error) {
+      console.error("Gemini AI Error:", error);
+      return { text: "", error: error.message || "Request failed" };
     }
+  }
 
-
-    /**
-     * Specialized prompt for generating a scene summary (Beat)
-     */
-    async generateSceneSummary(content: string): Promise<GeminiResponse> {
-        const prompt = `Act as a professional screenwriter and script doctor. 
+  /**
+   * Specialized prompt for generating a scene summary (Beat)
+   */
+  async generateSceneSummary(content: string): Promise<GeminiResponse> {
+    const prompt = `Act as a professional screenwriter and script doctor. 
 Sumarize the following scene content into a concise BEAT.
 Requirements:
 1. Provide exactly ONE short, punchy sentence summarising the scene.
@@ -59,15 +58,14 @@ Format: Just the summary text.
 
 Scene Content:
 ${content}`;
-        return this.callGemini(prompt);
-    }
+    return this.callGemini(prompt);
+  }
 
-
-    /**
-     * Specialized prompt for bulk processing
-     */
-    async generateBulkSummaries(transcript: string): Promise<GeminiResponse> {
-        const prompt = `Act as a professional screenwriter. 
+  /**
+   * Specialized prompt for bulk processing
+   */
+  async generateBulkSummaries(transcript: string): Promise<GeminiResponse> {
+    const prompt = `Act as a professional screenwriter. 
 Below is a structured screenplay. 
 Some blocks are marked with (REQUEST_SUMMARY_FOR_THIS_BLOCK). 
 Please generate a concise ONE-sentence summary for each of those marked blocks.
@@ -81,14 +79,18 @@ BLOCK X: Summary text (in the same language as the block)
 
 Screenplay:
 ${transcript}`;
-        return this.callGemini(prompt);
-    }
+    return this.callGemini(prompt);
+  }
 
-    /**
-     * Specialized prompt for rewriting/generating scene content based on rough notes and context
-     */
-    async generateRewriteScene(content: string, before: string, after: string): Promise<GeminiResponse> {
-        const prompt = `        
+  /**
+   * Specialized prompt for rewriting/generating scene content based on rough notes and context
+   */
+  async generateRewriteScene(
+    content: string,
+    before: string,
+    after: string
+  ): Promise<GeminiResponse> {
+    const prompt = `        
 Role: You are a professional Screenwriter.
 Task: Rewrite the "Current Scene Content" into a full, evocative screenplay scene while STRICTLY maintaining the original language style.
 
@@ -114,13 +116,17 @@ ${content}
 
 Context After:
 ${after}`;
-        return this.callGemini(prompt);
-    }
-    /**
-     * Specialized prompt for AI Script Doctor: Asking provocative questions to help the writer
-     */
-    async generateBrainstormQuestions(content: string, before: string, after: string): Promise<GeminiResponse> {
-        const prompt = `
+    return this.callGemini(prompt);
+  }
+  /**
+   * Specialized prompt for AI Script Doctor: Asking provocative questions to help the writer
+   */
+  async generateBrainstormQuestions(
+    content: string,
+    before: string,
+    after: string
+  ): Promise<GeminiResponse> {
+    const prompt = `
 Role: You are a sharp Script Doctor.
 Goal: Challenge and inspire the writer by analyzing the "Current Scene Content" as a GAP between contexts.
 
@@ -138,6 +144,6 @@ ${content}
 
 Context After:
 ${after}`;
-        return this.callGemini(prompt);
-    }
+    return this.callGemini(prompt);
+  }
 }

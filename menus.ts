@@ -576,7 +576,7 @@ export async function createNewScript(
     targetFolder = activeFile ? activeFile.parent?.path || "/" : "/";
   }
 
-  const baseName = "Untitled Script";
+  const baseName = "Untitled script";
   let fileName = `${baseName}.md`;
   let filePath =
     targetFolder === "/" ? fileName : `${targetFolder}/${fileName}`;
