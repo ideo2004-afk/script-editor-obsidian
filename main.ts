@@ -68,7 +68,10 @@ export default class ScriptEditorPlugin extends Plugin {
   async onload() {
     this.docxExporter = new DocxExporter();
 
-    this.registerView(STORYBOARD_VIEW_TYPE, (leaf) => new StoryBoardView(leaf));
+    this.registerView(
+      STORYBOARD_VIEW_TYPE,
+      (leaf) => new StoryBoardView(leaf, this)
+    );
 
     // 2. Settings / Help Tab
     await this.loadSettings();

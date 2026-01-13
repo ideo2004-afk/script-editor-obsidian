@@ -36,7 +36,7 @@ __export(main_exports, {
   SCRIPT_MARKERS: () => SCRIPT_MARKERS,
   SUMMARY_REGEX: () => SUMMARY_REGEX,
   TRANSITION_REGEX: () => TRANSITION_REGEX,
-  default: () => ScriptEditorPlugin4
+  default: () => ScriptEditorPlugin5
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian7 = require("obsidian");
@@ -19318,10 +19318,11 @@ ${after}`;
 // storyBoardView.ts
 var STORYBOARD_VIEW_TYPE = "script-editor-storyboard-view";
 var StoryBoardView = class extends import_obsidian2.ItemView {
-  constructor(leaf) {
+  constructor(leaf, plugin) {
     super(leaf);
     this.file = null;
     this.collapsedSections = /* @__PURE__ */ new Set();
+    this.plugin = plugin;
   }
   getViewType() {
     return STORYBOARD_VIEW_TYPE;
@@ -19815,11 +19816,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     });
   }
   async runAIBeat(blocks, blockIdx) {
-    var _a;
-    const settings = (_a = this.app.plugins.getPlugin(
-      "script-editor"
-    )) == null ? void 0 : _a.settings;
-    const apiKey = settings == null ? void 0 : settings.geminiApiKey;
+    const apiKey = this.plugin.settings.geminiApiKey;
     if (!apiKey) {
       new import_obsidian2.Notice("Please set your Gemini API key in settings first.");
       return;
@@ -19854,11 +19851,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     }
   }
   async runBulkAIBeat(blocks) {
-    var _a;
-    const settings = (_a = this.app.plugins.getPlugin(
-      "script-editor"
-    )) == null ? void 0 : _a.settings;
-    const apiKey = settings == null ? void 0 : settings.geminiApiKey;
+    const apiKey = this.plugin.settings.geminiApiKey;
     if (!apiKey) {
       new import_obsidian2.Notice("Please set your Gemini API key in settings first.");
       return;
@@ -20133,7 +20126,7 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian4.Setting(containerEl).setName("Usage guide").setHeading();
-    new import_obsidian4.Setting(containerEl).setName("AI beat summary (Gemini 2.5 flash)").setDesc("Get your API key from Google AI studio.").addText(
+    new import_obsidian4.Setting(containerEl).setName("AI beat summary (Gemini 2.5 Flash)").setDesc("Get your API key from Google AI Studio.").addText(
       (text) => text.setPlaceholder("Enter your Gemini API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
         this.plugin.settings.geminiApiKey = value.trim();
         await this.plugin.saveSettings();
@@ -20361,51 +20354,6 @@ function registerMenus(plugin) {
         });
       }
     )
-  );
-  plugin.registerEvent(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    app.workspace.on(
-      "view-actions-menu",
-      (menu, view) => {
-        if (view instanceof import_obsidian5.MarkdownView && plugin.isScript(view.file)) {
-          menu.addItem((item) => {
-            item.setTitle("Open story board").setIcon("layout-grid").onClick(() => {
-              void plugin.openStoryBoard(view.leaf, view.file);
-            });
-          });
-        }
-      }
-    )
-  );
-  plugin.registerEvent(
-    app.workspace.on("file-menu", (menu, file) => {
-      if (file instanceof import_obsidian5.TFile && file.extension === "md") {
-        if (plugin.isScript(file)) {
-          menu.addItem((item) => {
-            item.setTitle("Export to .docx").setIcon("file-output").onClick(async () => {
-              await exportFileToDocx(plugin, file);
-            });
-          });
-          menu.addItem((item) => {
-            item.setTitle("Export summary").setIcon("file-text").onClick(async () => {
-              await exportSummary(plugin, file);
-            });
-          });
-        }
-      }
-      menu.addItem((item) => {
-        item.setTitle("New script").setIcon("scroll-text").onClick(async () => {
-          var _a;
-          let folderPath = "/";
-          if (file instanceof import_obsidian5.TFolder) {
-            folderPath = file.path;
-          } else if (file instanceof import_obsidian5.TFile) {
-            folderPath = ((_a = file.parent) == null ? void 0 : _a.path) || "/";
-          }
-          await createNewScript(plugin, folderPath);
-        });
-      });
-    })
   );
   const updateHeaderButtons = () => {
     const view = app.workspace.getActiveViewOfType(import_obsidian5.MarkdownView);
@@ -20986,10 +20934,13 @@ var LP_CLASSES = {
   NOTE: "lp-note",
   SYMBOL: "lp-marker-symbol"
 };
-var ScriptEditorPlugin4 = class extends import_obsidian7.Plugin {
+var ScriptEditorPlugin5 = class extends import_obsidian7.Plugin {
   async onload() {
     this.docxExporter = new DocxExporter();
-    this.registerView(STORYBOARD_VIEW_TYPE, (leaf) => new StoryBoardView(leaf));
+    this.registerView(
+      STORYBOARD_VIEW_TYPE,
+      (leaf) => new StoryBoardView(leaf, this)
+    );
     await this.loadSettings();
     this.addSettingTab(new ScriptEditorSettingTab(this.app, this));
     registerReadingView(this);

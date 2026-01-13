@@ -241,68 +241,6 @@ export function registerMenus(plugin: ScriptEditorPlugin) {
     )
   );
 
-  // 5a. Add Storyboard toggle to view header
-  plugin.registerEvent(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (app.workspace as any).on(
-      "view-actions-menu",
-      (menu: Menu, view: MarkdownView) => {
-        if (view instanceof MarkdownView && plugin.isScript(view.file)) {
-          menu.addItem((item: MenuItem) => {
-            item
-              .setTitle("Open story board")
-              .setIcon("layout-grid")
-              .onClick(() => {
-                void plugin.openStoryBoard(view.leaf, view.file);
-              });
-          });
-        }
-      }
-    )
-  );
-
-  // 6. File Explorer Context Menu
-  plugin.registerEvent(
-    app.workspace.on("file-menu", (menu: Menu, file: TFile | TFolder) => {
-      if (file instanceof TFile && file.extension === "md") {
-        if (plugin.isScript(file)) {
-          menu.addItem((item) => {
-            item
-              .setTitle("Export to .docx")
-              .setIcon("file-output")
-              .onClick(async () => {
-                await exportFileToDocx(plugin, file);
-              });
-          });
-
-          menu.addItem((item) => {
-            item
-              .setTitle("Export summary")
-              .setIcon("file-text")
-              .onClick(async () => {
-                await exportSummary(plugin, file);
-              });
-          });
-        }
-      }
-
-      menu.addItem((item) => {
-        item
-          .setTitle("New script")
-          .setIcon("scroll-text")
-          .onClick(async () => {
-            let folderPath = "/";
-            if (file instanceof TFolder) {
-              folderPath = file.path;
-            } else if (file instanceof TFile) {
-              folderPath = file.parent?.path || "/";
-            }
-            await createNewScript(plugin, folderPath);
-          });
-      });
-    })
-  );
-
   // Dynamic header button management
   const updateHeaderButtons = () => {
     const view = app.workspace.getActiveViewOfType(MarkdownView);

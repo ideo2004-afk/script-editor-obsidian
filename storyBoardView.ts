@@ -7,7 +7,11 @@ import {
   setIcon,
   Notice,
 } from "obsidian";
-import { SCENE_REGEX, COLOR_TAG_REGEX, SUMMARY_REGEX } from "./main";
+import ScriptEditorPlugin, {
+  SCENE_REGEX,
+  COLOR_TAG_REGEX,
+  SUMMARY_REGEX,
+} from "./main";
 import { GeminiService } from "./ai";
 
 export const STORYBOARD_VIEW_TYPE = "script-editor-storyboard-view";
@@ -24,9 +28,11 @@ interface ScriptBlock {
 export class StoryBoardView extends ItemView {
   file: TFile | null = null;
   collapsedSections: Set<string> = new Set();
+  plugin: ScriptEditorPlugin;
 
-  constructor(leaf: WorkspaceLeaf) {
+  constructor(leaf: WorkspaceLeaf, plugin: ScriptEditorPlugin) {
     super(leaf);
+    this.plugin = plugin;
   }
 
   getViewType() {
@@ -691,11 +697,7 @@ export class StoryBoardView extends ItemView {
   }
 
   private async runAIBeat(blocks: ScriptBlock[], blockIdx: number) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const settings = (this.app as any).plugins.getPlugin(
-      "script-editor"
-    )?.settings;
-    const apiKey = settings?.geminiApiKey;
+    const apiKey = this.plugin.settings.geminiApiKey;
 
     if (!apiKey) {
       new Notice("Please set your Gemini API key in settings first.");
@@ -744,11 +746,7 @@ export class StoryBoardView extends ItemView {
   }
 
   private async runBulkAIBeat(blocks: ScriptBlock[]) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const settings = (this.app as any).plugins.getPlugin(
-      "script-editor"
-    )?.settings;
-    const apiKey = settings?.geminiApiKey;
+    const apiKey = this.plugin.settings.geminiApiKey;
 
     if (!apiKey) {
       new Notice("Please set your Gemini API key in settings first.");
