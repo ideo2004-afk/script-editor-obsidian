@@ -19699,7 +19699,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "e.g. INT. KITCHEN - DAY" }
+      attr: { type: "text", placeholder: "e.g. int. kitchen - day" }
     });
     titleInput.value = title;
     titleInput.focus();
@@ -20126,7 +20126,7 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian4.Setting(containerEl).setName("Usage guide").setHeading();
-    new import_obsidian4.Setting(containerEl).setName("AI beat summary").setDesc("Get your API key from Google AI Studio.").addText(
+    new import_obsidian4.Setting(containerEl).setName("AI beat summary").setDesc("Get your API key from Google AI studio.").addText(
       (text) => text.setPlaceholder("Enter your API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
         this.plugin.settings.geminiApiKey = value.trim();
         await this.plugin.saveSettings();
@@ -20149,22 +20149,22 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     featuresDiv.createEl("li", {
       text: "Renumber scenes: right-click in the editor to re-order your scene numbers automatically."
     });
-    new import_obsidian4.Setting(containerEl).setName("Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
+    new import_obsidian4.Setting(containerEl).setName("Screenplay syntax").setDesc("Basic rules for fountain-compatible formatting.").setHeading();
     const syntaxDiv = containerEl.createDiv();
     syntaxDiv.createEl("li", {
-      text: "Scene heading: INT. / EXT. \u2014 automatic bold and uppercase."
+      text: "Scene heading: int. / ext. \u2014 automatic bold and uppercase."
     });
     syntaxDiv.createEl("li", {
-      text: "Character: @NAME \u2014 centered. @ is hidden in preview."
+      text: "Character: @name \u2014 centered, @ is hidden in preview."
     });
     syntaxDiv.createEl("li", {
       text: "Dialogue: text below character \u2014 automatically indented."
     });
     syntaxDiv.createEl("li", {
-      text: "Parenthetical: (emotion) / OS / VO \u2014 centered and italic."
+      text: "Parenthetical: (emotion) / os / vo \u2014 centered and italic."
     });
     syntaxDiv.createEl("li", {
-      text: "Transition: CUT TO / FADE IN \u2014 right aligned."
+      text: "Transition: cut to / fade in \u2014 right aligned."
     });
     const supportDiv = containerEl.createEl("div", {
       cls: "script-editor-settings-support"

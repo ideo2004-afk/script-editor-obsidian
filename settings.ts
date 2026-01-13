@@ -29,7 +29,7 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("AI beat summary")
-      .setDesc("Get your API key from Google AI Studio.")
+      .setDesc("Get your API key from Google AI studio.")
       .addText((text) =>
         text
           .setPlaceholder("Enter your API key")
@@ -67,24 +67,24 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
     // Screenplay Syntax
     new Setting(containerEl)
       .setName("Screenplay syntax")
-      .setDesc("Basic rules for Fountain-compatible formatting.")
+      .setDesc("Basic rules for fountain-compatible formatting.")
       .setHeading();
 
     const syntaxDiv = containerEl.createDiv();
     syntaxDiv.createEl("li", {
-      text: "Scene heading: INT. / EXT. — automatic bold and uppercase.",
+      text: "Scene heading: int. / ext. — automatic bold and uppercase.",
     });
     syntaxDiv.createEl("li", {
-      text: "Character: @NAME — centered. @ is hidden in preview.",
+      text: "Character: @name — centered, @ is hidden in preview.",
     });
     syntaxDiv.createEl("li", {
       text: "Dialogue: text below character — automatically indented.",
     });
     syntaxDiv.createEl("li", {
-      text: "Parenthetical: (emotion) / OS / VO — centered and italic.",
+      text: "Parenthetical: (emotion) / os / vo — centered and italic.",
     });
     syntaxDiv.createEl("li", {
-      text: "Transition: CUT TO / FADE IN — right aligned.",
+      text: "Transition: cut to / fade in — right aligned.",
     });
 
     // Support
