@@ -19699,7 +19699,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "e.g. Int. kitchen - day" }
+      attr: { type: "text", placeholder: "e.g. INT. KITCHEN - DAY" }
     });
     titleInput.value = title;
     titleInput.focus();
@@ -19818,7 +19818,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
   async runAIBeat(blocks, blockIdx) {
     const apiKey = this.plugin.settings.geminiApiKey;
     if (!apiKey) {
-      new import_obsidian2.Notice("Please set your Gemini API key in settings first.");
+      new import_obsidian2.Notice("Please set your API key in settings first.");
       return;
     }
     const gemini = new GeminiService(apiKey);
@@ -19853,7 +19853,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
   async runBulkAIBeat(blocks) {
     const apiKey = this.plugin.settings.geminiApiKey;
     if (!apiKey) {
-      new import_obsidian2.Notice("Please set your Gemini API key in settings first.");
+      new import_obsidian2.Notice("Please set your API key in settings first.");
       return;
     }
     const scenesToProcess = blocks.slice(1).filter((b) => b.type === "scene" && !b.summary);
@@ -20126,8 +20126,8 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian4.Setting(containerEl).setName("Usage guide").setHeading();
-    new import_obsidian4.Setting(containerEl).setName("AI beat summary (Gemini 2.5 Flash)").setDesc("Get your API key from Google AI Studio.").addText(
-      (text) => text.setPlaceholder("Enter your Gemini API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
+    new import_obsidian4.Setting(containerEl).setName("AI beat summary").setDesc("Get your API key from Google AI Studio.").addText(
+      (text) => text.setPlaceholder("Enter your API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
         this.plugin.settings.geminiApiKey = value.trim();
         await this.plugin.saveSettings();
       }).inputEl.addClass("script-editor-api-key-input")
@@ -20152,19 +20152,19 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     new import_obsidian4.Setting(containerEl).setName("Screenplay syntax").setDesc("Basic rules for Fountain-compatible formatting.").setHeading();
     const syntaxDiv = containerEl.createDiv();
     syntaxDiv.createEl("li", {
-      text: "Scene heading: Int. / Ext. \u2014 automatic bold and uppercase."
+      text: "Scene heading: INT. / EXT. \u2014 automatic bold and uppercase."
     });
     syntaxDiv.createEl("li", {
-      text: 'Character: @NAME \u2014 centered. "@" is hidden in preview.'
+      text: "Character: @NAME \u2014 centered. @ is hidden in preview."
     });
     syntaxDiv.createEl("li", {
       text: "Dialogue: text below character \u2014 automatically indented."
     });
     syntaxDiv.createEl("li", {
-      text: "Parenthetical: (emotion) / OS: / VO: \u2014 centered and italic."
+      text: "Parenthetical: (emotion) / OS / VO \u2014 centered and italic."
     });
     syntaxDiv.createEl("li", {
-      text: "Transition: CUT TO: / FADE IN \u2014 right aligned."
+      text: "Transition: CUT TO / FADE IN \u2014 right aligned."
     });
     const supportDiv = containerEl.createEl("div", {
       cls: "script-editor-settings-support"
@@ -20631,7 +20631,7 @@ Somerset still seems distant.
 async function aiScriptDoctor(plugin, editor) {
   const apiKey = plugin.settings.geminiApiKey;
   if (!apiKey) {
-    new import_obsidian5.Notice("Please set your Gemini API key in settings first.");
+    new import_obsidian5.Notice("Please set your API key in settings first.");
     return;
   }
   const content = editor.getValue();
@@ -20719,7 +20719,7 @@ async function aiScriptDoctor(plugin, editor) {
 async function aiSummaryAndRewrite(plugin, editor) {
   const apiKey = plugin.settings.geminiApiKey;
   if (!apiKey) {
-    new import_obsidian5.Notice("Please set your Gemini API key in settings first.");
+    new import_obsidian5.Notice("Please set your API key in settings first.");
     return;
   }
   const content = editor.getValue();

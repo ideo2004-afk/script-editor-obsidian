@@ -28,11 +28,11 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName("Usage guide").setHeading();
 
     new Setting(containerEl)
-      .setName("AI beat summary (Gemini 2.5 Flash)")
+      .setName("AI beat summary")
       .setDesc("Get your API key from Google AI Studio.")
       .addText((text) =>
         text
-          .setPlaceholder("Enter your Gemini API key")
+          .setPlaceholder("Enter your API key")
           .setValue(this.plugin.settings.geminiApiKey)
           .onChange(async (value) => {
             this.plugin.settings.geminiApiKey = value.trim();
@@ -72,19 +72,19 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
 
     const syntaxDiv = containerEl.createDiv();
     syntaxDiv.createEl("li", {
-      text: "Scene heading: Int. / Ext. — automatic bold and uppercase.",
+      text: "Scene heading: INT. / EXT. — automatic bold and uppercase.",
     });
     syntaxDiv.createEl("li", {
-      text: 'Character: @NAME — centered. "@" is hidden in preview.',
+      text: "Character: @NAME — centered. @ is hidden in preview.",
     });
     syntaxDiv.createEl("li", {
       text: "Dialogue: text below character — automatically indented.",
     });
     syntaxDiv.createEl("li", {
-      text: "Parenthetical: (emotion) / OS: / VO: — centered and italic.",
+      text: "Parenthetical: (emotion) / OS / VO — centered and italic.",
     });
     syntaxDiv.createEl("li", {
-      text: "Transition: CUT TO: / FADE IN — right aligned.",
+      text: "Transition: CUT TO / FADE IN — right aligned.",
     });
 
     // Support

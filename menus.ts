@@ -4,7 +4,6 @@ import {
   Editor,
   MarkdownView,
   TFile,
-  TFolder,
   Notice,
   setIcon,
 } from "obsidian";
@@ -603,7 +602,7 @@ export async function aiScriptDoctor(
 ) {
   const apiKey = plugin.settings.geminiApiKey;
   if (!apiKey) {
-    new Notice("Please set your Gemini API key in settings first.");
+    new Notice("Please set your API key in settings first.");
     return;
   }
 
@@ -747,7 +746,7 @@ export async function aiSummaryAndRewrite(
 ) {
   const apiKey = plugin.settings.geminiApiKey;
   if (!apiKey) {
-    new Notice("Please set your Gemini API key in settings first.");
+    new Notice("Please set your API key in settings first.");
     return;
   }
 

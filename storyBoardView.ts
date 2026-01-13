@@ -551,7 +551,7 @@ export class StoryBoardView extends ItemView {
     });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "e.g. Int. kitchen - day" },
+      attr: { type: "text", placeholder: "e.g. INT. KITCHEN - DAY" },
     });
     titleInput.value = title;
     titleInput.focus();
@@ -700,7 +700,7 @@ export class StoryBoardView extends ItemView {
     const apiKey = this.plugin.settings.geminiApiKey;
 
     if (!apiKey) {
-      new Notice("Please set your Gemini API key in settings first.");
+      new Notice("Please set your API key in settings first.");
       return;
     }
 
@@ -749,7 +749,7 @@ export class StoryBoardView extends ItemView {
     const apiKey = this.plugin.settings.geminiApiKey;
 
     if (!apiKey) {
-      new Notice("Please set your Gemini API key in settings first.");
+      new Notice("Please set your API key in settings first.");
       return;
     }
 
