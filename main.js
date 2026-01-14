@@ -19699,7 +19699,7 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
     });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "e.g. int. kitchen - day" }
+      attr: { type: "text", placeholder: "e.g. INT. KITCHEN - DAY" }
     });
     titleInput.value = title;
     titleInput.focus();
@@ -20126,7 +20126,7 @@ var ScriptEditorSettingTab = class extends import_obsidian4.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     new import_obsidian4.Setting(containerEl).setName("Usage guide").setHeading();
-    new import_obsidian4.Setting(containerEl).setName("AI beat summary").setDesc("Get your API key from Google AI studio.").addText(
+    new import_obsidian4.Setting(containerEl).setName("Gemini API key").setDesc("Get your API key from Google AI studio.").addText(
       (text) => text.setPlaceholder("Enter your API key").setValue(this.plugin.settings.geminiApiKey).onChange(async (value) => {
         this.plugin.settings.geminiApiKey = value.trim();
         await this.plugin.saveSettings();

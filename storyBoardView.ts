@@ -551,7 +551,7 @@ export class StoryBoardView extends ItemView {
     });
     const titleInput = body.createEl("input", {
       cls: "storyboard-modal-title-input",
-      attr: { type: "text", placeholder: "e.g. int. kitchen - day" },
+      attr: { type: "text", placeholder: "e.g. INT. KITCHEN - DAY" },
     });
     titleInput.value = title;
     titleInput.focus();

@@ -28,7 +28,7 @@ export class ScriptEditorSettingTab extends PluginSettingTab {
     new Setting(containerEl).setName("Usage guide").setHeading();
 
     new Setting(containerEl)
-      .setName("AI beat summary")
+      .setName("Gemini API key")
       .setDesc("Get your API key from Google AI studio.")
       .addText((text) =>
         text
