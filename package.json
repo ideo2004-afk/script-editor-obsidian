@@ -1,6 +1,6 @@
 {
   "name": "script-editor",
-  "version": "1.9.12",
+  "version": "1.9.13",
   "description": "Standard Fountain-compatible screenplay editor with CJK support.",
   "main": "main.js",
   "scripts": {
