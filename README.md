@@ -1,4 +1,4 @@
-# Script Editor v1.9.0
+# Script Editor v1.9
 
 Script Editor is an AI Powered Fountain-compatible screenplay editor with CJK support (Chinese, Japanese, Korean), intelligent formatting detection, integrated Story Board/Outline tools, AI aid summary, and DOCX export.
 
@@ -61,14 +61,6 @@ A visual grid view of your screenplay's scenes with full drag-and-drop support.
 - **AI Beat Summary**: Integrates Gemini 2.5 Flash to instantly generate scene summaries or new scenes based on context.
 - **Bulk AI Processing**: One-click to analyze and summarize your entire screenplay.
 - **AI Rewrite Scene**: Right-click anywhere in the editor to rewrite your rough notes into a professional screenplay scene based on surrounding context.
-
-### Scene Mode View (Outline)
-
-A dedicated structural view for your script.
-
-- **Location**: Find the list icon in the **right side dock** (next to the Outline).
-- **H1-H2 Folding**: Collapse acts or sections to focus on specific parts.
-- **Scene Summaries**: Toggle and configure the length of scene previews in settings.
 
 ### DOCX Export
 
