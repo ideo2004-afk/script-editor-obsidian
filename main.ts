@@ -124,24 +124,43 @@ export default class ScriptEditorPlugin extends Plugin {
       this.refreshStoryBoard(true);
     });
 
-    // 6. 動態同步：當打開新檔案時，自動更新 Story Board
+    // 6. 動態同步：處理檔案導航與分頁模式切換
     this.registerEvent(
       this.app.workspace.on("file-open", (file) => {
-        if (file instanceof TFile) {
-          const leaves =
-            this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
-          leaves.forEach((leaf) => {
-            if (leaf.view instanceof StoryBoardView) {
-              if (this.isScript(file)) {
-                void leaf.view.setFile(file);
-              } else {
-                // 如果不是劇本，清空 Story Board
-                leaf.view.file = null;
-                void leaf.view.updateView();
-              }
-            }
-          });
+        if (!file || !(file instanceof TFile)) return;
+
+        // 取得當前活動的分頁 (Active Leaf)
+        const activeLeaf =
+          this.app.workspace.getActiveViewOfType(StoryBoardView)?.leaf;
+
+        if (activeLeaf && activeLeaf.view instanceof StoryBoardView) {
+          // Use a simple boolean check instead of relying on the type guard to avoid 'never' narrowing
+          const isScriptFile = this.isScript(file);
+          if (isScriptFile) {
+            // 如果還是劇本，直接更新內容
+            void activeLeaf.view.setFile(file);
+          } else {
+            // 如果點選了非劇本檔案，則將此分頁變回編輯器模式 (選項 B 邏輯)
+            void activeLeaf.setViewState({
+              type: "markdown",
+              state: { file: file.path },
+            });
+          }
+          return; // 處理完活動分頁後，不需再掃描其他分頁
         }
+
+        // --- 以下處理「非活動中」的背景 Storyboard 分頁（同步更新邏輯） ---
+        const leaves = this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
+        leaves.forEach((leaf) => {
+          if (leaf.view instanceof StoryBoardView) {
+            // 只有當這個 Storyboard 分頁原本就裝著該檔案，或者它是對應的劇本才更新
+            if (this.isScript(file)) {
+              // 對於背景分頁，我們只在它「已經」開啟了該檔案的情況下才更新（或您希望背景也跟著切換？）
+              // 這裡保留原本的彈性：如果背景分頁是 Storyboard，讓它載入目前開啟的檔案
+              void leaf.view.setFile(file);
+            }
+          }
+        });
       })
     );
 
@@ -179,7 +198,7 @@ export default class ScriptEditorPlugin extends Plugin {
     }
   }
 
-  isScript(file: TFile | null): file is TFile {
+  isScript(file: TFile | null): boolean {
     if (!file) return false;
     const cache = this.app.metadataCache.getFileCache(file);
     const cssClasses = cache?.frontmatter?.cssclasses;

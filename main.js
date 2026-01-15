@@ -19333,6 +19333,23 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
   getIcon() {
     return "layout-grid";
   }
+  // State management for proper view restoration
+  getState() {
+    var _a;
+    return {
+      file: (_a = this.file) == null ? void 0 : _a.path
+    };
+  }
+  async setState(state2, result) {
+    if (state2.file) {
+      const file = this.app.vault.getAbstractFileByPath(state2.file);
+      if (file instanceof import_obsidian2.TFile) {
+        this.file = file;
+        await this.updateView();
+      }
+    }
+    return super.setState(state2, result);
+  }
   async setFile(file) {
     this.file = file;
     await this.updateView();
@@ -19510,13 +19527,34 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
           document.addEventListener("mousedown", closeHandler);
         });
         const displayTitle2 = block.title.replace(/^###\s*/, "").trim();
-        cardEl.createDiv({ text: displayTitle2, cls: "storyboard-card-title" });
+        const titleEl = cardEl.createDiv({
+          text: displayTitle2,
+          cls: "storyboard-card-title"
+        });
+        titleEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (e.button === 0) {
+            void this.navToLine(block.originalLine);
+          }
+        });
+        const contentEl = cardEl.createDiv({ cls: "storyboard-card-content" });
         if (finalDisplaySummary) {
-          cardEl.createDiv({
+          contentEl.createDiv({
             text: finalDisplaySummary,
             cls: "storyboard-card-summary"
           });
+        } else {
+          contentEl.createDiv({
+            text: "(click to edit)",
+            cls: "storyboard-card-placeholder"
+          });
         }
+        contentEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (e.button === 0) {
+            this.openEditModal(blocks, blockIdx);
+          }
+        });
         cardEl.addEventListener("dragstart", (e) => {
           var _a;
           (_a = e.dataTransfer) == null ? void 0 : _a.setData("text/plain", blockIdx.toString());
@@ -19561,11 +19599,6 @@ var StoryBoardView = class extends import_obsidian2.ItemView {
             if (fromIdx !== adjustedTo) {
               void this.moveBlock(blocks, fromIdx, toIdx);
             }
-          }
-        });
-        cardEl.addEventListener("click", (e) => {
-          if (e.button === 0) {
-            void this.navToLine(block.originalLine);
           }
         });
         const triggerMenu = (e) => {
@@ -20975,19 +21008,30 @@ var ScriptEditorPlugin5 = class extends import_obsidian7.Plugin {
     });
     this.registerEvent(
       this.app.workspace.on("file-open", (file) => {
-        if (file instanceof import_obsidian7.TFile) {
-          const leaves = this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
-          leaves.forEach((leaf) => {
-            if (leaf.view instanceof StoryBoardView) {
-              if (this.isScript(file)) {
-                void leaf.view.setFile(file);
-              } else {
-                leaf.view.file = null;
-                void leaf.view.updateView();
-              }
-            }
-          });
+        var _a;
+        if (!file || !(file instanceof import_obsidian7.TFile))
+          return;
+        const activeLeaf = (_a = this.app.workspace.getActiveViewOfType(StoryBoardView)) == null ? void 0 : _a.leaf;
+        if (activeLeaf && activeLeaf.view instanceof StoryBoardView) {
+          const isScriptFile = this.isScript(file);
+          if (isScriptFile) {
+            void activeLeaf.view.setFile(file);
+          } else {
+            void activeLeaf.setViewState({
+              type: "markdown",
+              state: { file: file.path }
+            });
+          }
+          return;
         }
+        const leaves = this.app.workspace.getLeavesOfType(STORYBOARD_VIEW_TYPE);
+        leaves.forEach((leaf) => {
+          if (leaf.view instanceof StoryBoardView) {
+            if (this.isScript(file)) {
+              void leaf.view.setFile(file);
+            }
+          }
+        });
       })
     );
     this.registerEditorSuggest(new CharacterSuggest(this.app, this));

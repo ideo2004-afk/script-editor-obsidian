@@ -47,6 +47,28 @@ export class StoryBoardView extends ItemView {
     return "layout-grid";
   }
 
+  // State management for proper view restoration
+  getState(): { file?: string } {
+    return {
+      file: this.file?.path,
+    };
+  }
+
+  async setState(
+    state: { file?: string },
+    result: { history: boolean }
+  ): Promise<void> {
+    if (state.file) {
+      const file = this.app.vault.getAbstractFileByPath(state.file);
+      if (file instanceof TFile) {
+        this.file = file;
+        await this.updateView();
+      }
+    }
+    // Call super to ensure base functionality
+    return super.setState(state, result);
+  }
+
   async setFile(file: TFile) {
     this.file = file;
     await this.updateView();
@@ -277,13 +299,38 @@ export class StoryBoardView extends ItemView {
           .replace(/^###\s*/, "") // 移除開頭的 ###
           .trim();
 
-        cardEl.createDiv({ text: displayTitle, cls: "storyboard-card-title" });
+        // Title element - click to navigate to edit mode
+        const titleEl = cardEl.createDiv({
+          text: displayTitle,
+          cls: "storyboard-card-title",
+        });
+        titleEl.addEventListener("click", (e: MouseEvent) => {
+          e.stopPropagation();
+          if (e.button === 0) {
+            void this.navToLine(block.originalLine);
+          }
+        });
+
+        // Content area - click to open edit modal
+        const contentEl = cardEl.createDiv({ cls: "storyboard-card-content" });
         if (finalDisplaySummary) {
-          cardEl.createDiv({
+          contentEl.createDiv({
             text: finalDisplaySummary,
             cls: "storyboard-card-summary",
           });
+        } else {
+          // Empty content placeholder to ensure clickable area
+          contentEl.createDiv({
+            text: "(click to edit)",
+            cls: "storyboard-card-placeholder",
+          });
         }
+        contentEl.addEventListener("click", (e: MouseEvent) => {
+          e.stopPropagation();
+          if (e.button === 0) {
+            this.openEditModal(blocks, blockIdx);
+          }
+        });
 
         // Drag and Drop implementation
         cardEl.addEventListener("dragstart", (e: DragEvent) => {
@@ -336,13 +383,6 @@ export class StoryBoardView extends ItemView {
             if (fromIdx !== adjustedTo) {
               void this.moveBlock(blocks, fromIdx, toIdx);
             }
-          }
-        });
-
-        // Left-click only: navigate to line
-        cardEl.addEventListener("click", (e: MouseEvent) => {
-          if (e.button === 0) {
-            void this.navToLine(block.originalLine);
           }
         });
 

@@ -275,6 +275,23 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.storyboard-card-title:hover {
+  color: var(--text-accent);
+}
+
+.storyboard-card-content {
+  flex: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.storyboard-card-content:hover {
+  background-color: hsla(var(--interactive-accent-hsl), 0.1);
 }
 
 .storyboard-card-summary {
@@ -284,6 +301,22 @@
   -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.storyboard-card-placeholder {
+  font-size: 0.8em;
+  color: var(--text-faint);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.storyboard-card:hover .storyboard-card-placeholder {
+  opacity: 0.6;
 }
 
 .storyboard-card-menu-btn {
